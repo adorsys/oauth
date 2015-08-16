@@ -1,0 +1,42 @@
+<assembly>
+  <id>module</id>
+  <formats>
+    <format>zip</format>
+  </formats>
+
+  <includeBaseDirectory>false</includeBaseDirectory>
+
+  <files>
+    <file>
+      <source>module.xml</source>
+      <outputDirectory>oauth/main</outputDirectory>
+      <filtered>true</filtered>
+    </file>
+    <file>
+      <source>${project.build.directory}/${project.build.finalName}.${project.packaging}</source>
+      <outputDirectory>oauth/main</outputDirectory>
+    </file>
+  </files>
+
+  <dependencySets>
+    <dependencySet>
+      <scope>runtime</scope>
+      <unpack>false</unpack>
+      <useProjectArtifact>false</useProjectArtifact>
+      <useTransitiveDependencies>true</useTransitiveDependencies>
+      <outputDirectory>oauth/main</outputDirectory>
+      <includes>
+        <include>com.nimbusds:oauth2-oidc-sdk</include>
+        <include>com.nimbusds:nimbus-jose-jwt</include>
+        <include>net.minidev:json-smart</include>
+        <include>commons-codec:commons-codec</include>
+        <include>commons-logging:commons-logging</include>
+        <include>org.apache.commons:commons-lang3</include>
+        <include>org.apache.httpcomponents:httpclient-cache</include>
+        <include>org.apache.httpcomponents:httpclient</include>
+        <include>org.apache.httpcomponents:httpcore</include>
+      </includes>
+    </dependencySet>
+  </dependencySets>
+
+</assembly>

@@ -1,0 +1,25 @@
+package de.adorsys.oauth.sample;
+
+import java.io.IOException;
+import java.util.Random;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+/**
+ * RandomServlet
+ */
+@WebServlet(value="/api/random")
+public class RandomServlet extends HttpServlet {
+
+    private static final long serialVersionUID = 1L;
+
+    private Random random = new Random();
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.getWriter().write(random.nextInt(10000));
+    }
+}

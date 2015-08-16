@@ -1,0 +1,31 @@
+<module xmlns="urn:jboss:module:1.1" name="oauth">
+
+
+  <resources>
+    <resource-root path="commons-codec-1.10.jar"/>
+    <resource-root path="commons-lang3-3.3.2.jar"/>
+    <resource-root path="commons-logging-1.1.3.jar"/>
+    <resource-root path="httpclient-cache-4.3.3.jar"/>
+    <resource-root path="httpclient-4.3.3.jar"/>
+    <resource-root path="httpcore-4.3.2.jar"/>
+    <resource-root path="json-smart-1.3.1.jar"/>
+    <resource-root path="nimbus-jose-jwt-3.10.jar"/>
+    <resource-root path="oauth-client-${project.version}.jar"/>
+    <resource-root path="oauth2-oidc-sdk-4.14.2.jar"/>
+  </resources>
+
+  <dependencies>
+    <module name="javax.api"/>
+    <module name="javax.enterprise.api"/>
+    <module name="javax.inject.api"/>
+    <module name="javax.mail.api"/>
+    <module name="javax.servlet.api"/>
+    <module name="org.slf4j" />
+    <module name="org.jboss.as.server" />
+    <module name="org.jboss.as.web" />
+    <module name="org.jboss.metadata" />
+    <module name="org.jboss.weld.api" />
+    <module name="org.jboss.weld.core" />
+    <module name="org.picketbox" />
+  </dependencies>
+</module>

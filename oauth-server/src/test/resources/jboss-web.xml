@@ -1,0 +1,4 @@
+<jbopss-web>
+  <context-root>oauth</context-root>
+  <security-domain>oauth</security-domain>
+</jbopss-web>

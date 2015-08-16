@@ -1,0 +1,52 @@
+connect
+batch
+
+/subsystem=logging/periodic-rotating-file-handler=FILE:write-attribute(name=append,value=false)
+/subsystem=logging/console-handler=CONSOLE:undefine-attribute(name=level)
+
+/subsystem=logging/logger=com.arjuna:remove
+/subsystem=logging/logger=org.apache.tomcat.util.modeler:remove
+/subsystem=logging/logger=sun.rmi:remove
+/subsystem=logging/logger=jacorb:remove
+/subsystem=logging/logger=jacorb.config:remove
+/subsystem=logging/logger=org.jboss.as.config:remove
+
+/subsystem=logging/logger=org:add(level=ERROR)
+/subsystem=logging/logger=com:add(level=ERROR)
+/subsystem=logging/logger=sun:add(level=ERROR)
+/subsystem=logging/logger=javax:add(level=ERROR)
+
+/subsystem=logging/logger=org.jboss.as.ejb3.deployment.processors.EjbJndiBindingsDeploymentUnitProcessor:add(level=OFF)
+/subsystem=logging/logger=org.jboss.as.controller.management-deprecated:add(level=OFF)
+/subsystem=logging/logger=org.jboss.as.dependency.private:add(level=OFF)
+
+/subsystem=logging/logger=org.jboss.as:add(level=INFO)
+/subsystem=logging/logger=org.jboss.security:add(level=ERROR)
+/subsystem=logging/logger=de:add(level=INFO)
+
+/subsystem=datasources/data-source=oauth:add(jndi-name=java:jboss/datasources/oauth,driver-name=h2,connection-url="jdbc:h2:mem:test;DB_CLOSE_DELAY=-1")
+/subsystem=datasources/data-source=oauth:write-attribute(name=user-name,value=sa)
+/subsystem=datasources/data-source=oauth:write-attribute(name=password,value=sa)
+/subsystem=datasources/data-source=oauth:write-attribute(name=enabled,value=true)
+
+
+/system-property=hibernate.hbm2ddl.auto:add(value="create-drop")
+
+/subsystem=security/security-domain=oauth:add(cache-type=default)
+/subsystem=security/security-domain=oauth/authentication=classic:add( \
+    login-modules=[ \
+    {   code=>UsersRoles, \
+        flag=>requisite, \
+        module-options=> [ \
+            password-stacking => useFirstPass, \
+            usersProperties => ${jboss.server.config.dir}/test-users.properties, \
+            rolesProperties => ${jboss.server.config.dir}/test-roles.properties ] }\
+    {  code=>OAuthRoleLoginModule, \
+       flag=>optional } \
+    ] \
+)
+
+/subsystem=transactions:write-attribute(name=node-identifier,value="${jboss.server.name}-1")
+
+
+run-batch
