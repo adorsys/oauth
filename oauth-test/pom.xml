@@ -62,7 +62,7 @@
         </dependency>
         <dependency>
           <groupId>${project.groupId}</groupId>
-          <artifactId>oauth-client</artifactId>
+          <artifactId>oauth-client-jaas</artifactId>
           <version>${project.version}</version>
           <type>zip</type>
           <scope>test</scope>
@@ -107,7 +107,7 @@
                 </goals>
                 <configuration>
                   <excludeTransitive>false</excludeTransitive>
-                  <includeArtifactIds>oauth-client</includeArtifactIds>
+                  <includeArtifactIds>oauth-client-jaas</includeArtifactIds>
                   <outputDirectory>target/jboss-eap-${version.jboss.as}/modules</outputDirectory>
                 </configuration>
               </execution>

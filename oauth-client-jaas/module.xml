@@ -10,7 +10,7 @@
     <resource-root path="httpcore-4.3.2.jar"/>
     <resource-root path="json-smart-1.3.1.jar"/>
     <resource-root path="nimbus-jose-jwt-3.10.jar"/>
-    <resource-root path="oauth-client-${project.version}.jar"/>
+    <resource-root path="oauth-client-jaas-${project.version}.jar"/>
     <resource-root path="oauth2-oidc-sdk-4.14.2.jar"/>
   </resources>
 
