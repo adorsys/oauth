@@ -24,6 +24,7 @@
     <module>oauth-tokenstore-mongodb</module>
     <module>oauth-server-sample</module>
     <module>oauth-client-jaas</module>
+    <module>oauth-client-jaspic</module>
     <module>oauth-test</module>
   </modules>
 
@@ -32,7 +33,7 @@
       <dependency>
         <groupId>org.jboss.spec</groupId>
         <artifactId>jboss-javaee-6.0</artifactId>
-        <version>3.0.2.Final-redhat-3</version>
+        <version>3.0.2.Final-redhat-15</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>

@@ -131,7 +131,7 @@ The authentication valve must be configured in the jboss-web.xml. (It's also pos
     	<context-root>app</context-root>
     	<security-domain>oauth-client</security-domain>
       	<valve>
-      		<class-name>de.adorsys.oauth.OAuthAuthenticator</class-name>
+      		<class-name>de.adorsys.oauth.client.jaas.OAuthAuthenticator</class-name>
       		<module>oauth</module>
       		<param>
         		<param-name>authEndpoint</param-name>
@@ -162,15 +162,23 @@ Wiht this definiton, the following security domain in the JBoss server definitio
 
 	<security-domain name="oauth-client" cache-type="default">
     	<authentication>
-        	<login-module module="oauth" code="de.adorsys.oauth.OAuthLoginModule" flag="required" />
+        	<login-module module="oauth" code="de.adorsys.oauth.client.jaas.OAuthLoginModule" flag="required" />
   		</authentication>
 	</security-domain>
 	
 
 oauth-client-jaspic
 ===================
-coming soon this fall ...
+This OAuth-client uses an ServletContextListener for self registration of the JAPSIC server auth module.
 
+The configuration is taken from the following ServletContext parameter:
+- oauth.auth - URI of authentification endpoint
+- oauth.token - URI of token endpoint
+- oauth.userinfo - URI of userinfo endpoint
+- oauth.clientId - OAuth client id
+- oauth.supportHttpSession - support of Http sessions
+
+There is no server configuration required.
 
 oauth-test
 ==========
