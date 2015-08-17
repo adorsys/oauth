@@ -19,10 +19,10 @@
   </properties>
 
   <modules>
-    <module>oauth-client</module>
     <module>oauth-server</module>
     <module>oauth-tokenstore-jpa</module>
     <module>oauth-server-sample</module>
+    <module>oauth-client-jaas</module>
     <module>oauth-test</module>
   </modules>
 
