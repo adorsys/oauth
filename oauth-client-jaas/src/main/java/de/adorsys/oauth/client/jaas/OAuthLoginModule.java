@@ -1,4 +1,4 @@
-package de.adorsys.oauth;
+package de.adorsys.oauth.client.jaas;
 
 import org.jboss.security.SimpleGroup;
 import org.jboss.security.SimplePrincipal;

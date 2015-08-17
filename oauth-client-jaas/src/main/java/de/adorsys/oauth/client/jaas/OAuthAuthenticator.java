@@ -1,4 +1,4 @@
-package de.adorsys.oauth;
+package de.adorsys.oauth.client.jaas;
 
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.authenticator.AuthenticatorBase;
@@ -39,6 +39,7 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * OAuthAuthenticator
  */
+@SuppressWarnings({"UnusedParameters", "unused"})
 public class OAuthAuthenticator extends AuthenticatorBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(OAuthAuthenticator.class);
@@ -166,11 +167,6 @@ public class OAuthAuthenticator extends AuthenticatorBase {
             }
         }
 
-        // redirect after authCode
-        String contentType = request.getContentType();
-        int length = request.getContentLength();
-
-        //
         return null;
     }
 

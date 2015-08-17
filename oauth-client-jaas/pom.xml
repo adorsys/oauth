@@ -90,7 +90,6 @@
                       <artifactId>${project.artifactId}</artifactId>
                       <version>${project.version}</version>
                       <type>zip</type>
-                      <destFileName>sample.war</destFileName>
                     </artifactItem>
                   </artifactItems>
                   <outputDirectory>../oauth-test/target/jboss-eap-6.4/modules</outputDirectory>
