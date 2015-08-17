@@ -39,6 +39,7 @@ public class TokenResource {
     @Context
     private HttpServletResponse servletResponse;
 
+    @SuppressWarnings("unused")
     @Inject
     private TokenStore tokenStore;
 

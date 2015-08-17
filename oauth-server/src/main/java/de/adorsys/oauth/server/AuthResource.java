@@ -38,6 +38,7 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 /**
  * AuthzResource
  */
+@SuppressWarnings("unused")
 @Path("auth")
 @ApplicationScoped
 public class AuthResource {
