@@ -1,4 +1,4 @@
-package de.adorsys.oauth.tokenstore.jpa;
+package de.adorsys.oauth.tokenstore.mongodb;
 
 import de.adorsys.oauth.server.TokenStore;
 
@@ -21,6 +21,7 @@ import javax.persistence.TypedQuery;
  * JpaTokenStore
  */
 @Stateless
+@SuppressWarnings("unused")
 public class JpaTokenStore implements TokenStore {
 
     private static final Logger LOG = LoggerFactory.getLogger(JpaTokenStore.class);

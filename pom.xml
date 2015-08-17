@@ -21,6 +21,7 @@
   <modules>
     <module>oauth-server</module>
     <module>oauth-tokenstore-jpa</module>
+    <module>oauth-tokenstore-mongodb</module>
     <module>oauth-server-sample</module>
     <module>oauth-client-jaas</module>
     <module>oauth-test</module>

@@ -52,7 +52,13 @@ JPA implementation of the oauth-server token store interface.
 
 oauth-tokenstore-mdb
 ====================
-Mongo DB implementation of the oauth-server token store interface  - coming soon ...
+Mongo DB implementation of the oauth-server token store interface.
+
+The following properties for database access will be used:
+
+- oauth.mongodb.uri (default: mongodb://localhost:27017)
+- oauth.mongodb.database (default: oauth)
+- oauth.mongodb.collection (default: tokenstore)
 
 
 

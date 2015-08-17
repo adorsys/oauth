@@ -1,4 +1,4 @@
-package de.adorsys.oauth.tokenstore.jpa;
+package de.adorsys.oauth.tokenstore.mongodb;
 
 import net.minidev.json.JSONObject;
 
@@ -30,7 +30,7 @@ import javax.persistence.Table;
 @NamedQueries({
     @NamedQuery(name = TokenEntity.FIND_ACCESSTOKEN, query = "select t from TokenEntity t where authCode = ?1")
 })
-@SuppressWarnings("FieldCanBeLocal")
+@SuppressWarnings({"FieldCanBeLocal", "unused"})
 public class TokenEntity {
     
     static final String FIND_ACCESSTOKEN = "FIND_ACCESSTOKEN";
@@ -58,13 +58,15 @@ public class TokenEntity {
     }
 
     public TokenEntity(Token token, UserInfo userInfo) {
-        this.id = token.getValue();
-        this.token = token.toJSONString();
-        if (token instanceof AccessToken && 0 < ((AccessToken) token).getLifetime()) {
+        this.id    = token.getValue();
+        this.token = token.toJSONObject().toJSONString();
+
+        if (token instanceof AccessToken && 0 != ((AccessToken) token).getLifetime()) {
             Calendar cal = Calendar.getInstance();
             cal.add(Calendar.SECOND, (int) ((AccessToken) token).getLifetime());
             expires = cal.getTime();
         }
+
         if (userInfo != null) {
             this.userInfo = userInfo.toJSONObject().toJSONString();
         }
