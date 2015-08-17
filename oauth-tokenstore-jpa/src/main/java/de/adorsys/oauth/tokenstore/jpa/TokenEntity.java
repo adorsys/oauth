@@ -1,4 +1,4 @@
-package de.adorsys.oauth.tokenstore.mongodb;
+package de.adorsys.oauth.tokenstore.jpa;
 
 import net.minidev.json.JSONObject;
 
