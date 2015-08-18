@@ -20,7 +20,7 @@ The server and test project using JBoss Arquillian for testing, so that the foll
 
 This can be achieved by :
 
-    mvn install:install-file -Dfile=jboss-eap-6.4.0.zip -DgroupId=org.jboss.as -DartifactId=jboss-eap -Dversion=6.4.0 -Dpackaging=zip
+    mvn install:install-file -Dfile=jboss-eap-6.4.0.zip -DgroupId=org.jboss.as -DartifactId=jboss-eap -Dversion=6.4 -Dpackaging=zip
 
 
 
