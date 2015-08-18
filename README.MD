@@ -14,7 +14,7 @@ The server and test project using JBoss Arquillian for testing, so that the foll
         <dependency>
           <groupId>org.jboss.as</groupId>
           <artifactId>jboss-eap</artifactId>
-          <version>${version.jboss.as}.0</version>
+          <version>${version.jboss.as}</version>
           <type>zip</type>
         </dependency>
 
