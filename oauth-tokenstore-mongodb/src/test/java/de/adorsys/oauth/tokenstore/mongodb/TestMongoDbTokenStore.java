@@ -142,6 +142,9 @@ public class TestMongoDbTokenStore {
 
     @Test
     public void testValid() {
+        if (tokenStore == null) {
+            return;
+        }
 
         Token token = new BearerAccessToken(10, new Scope("scope"));
         String id = tokenStore.add(token, createUserInfo());
