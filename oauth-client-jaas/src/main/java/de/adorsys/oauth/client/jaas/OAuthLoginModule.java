@@ -27,13 +27,15 @@ public class OAuthLoginModule implements LoginModule {
 
     private Subject subject;
     private CallbackHandler callbackHandler;
-    
+    private Map sharedState;
+
     static final ThreadLocal<UserInfo> USER_INFO = new ThreadLocal<>();
 
     @Override
     public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options) {
         this.subject = subject;
         this.callbackHandler = callbackHandler;
+        this.sharedState = sharedState;
     }
 
     @Override
@@ -73,6 +75,10 @@ public class OAuthLoginModule implements LoginModule {
                 subject.getPrincipals().add(rolesGroup);
                 for (String group : (List<String>) userInfo.getClaim("groups")) {
                     rolesGroup.addMember(new SimplePrincipal(group));
+                }
+
+                if (sharedState != null) {
+                    sharedState.put("userInfo", userInfo);
                 }
             }           
             
