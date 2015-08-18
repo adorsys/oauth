@@ -104,7 +104,7 @@ public class AuthResource {
                     .build();
         }
 
-        UserInfo userInfo = createUserInfo();
+        UserInfo userInfo = createUserInfo(request);
         LOG.debug(userInfo.toJSONObject().toJSONString());
         
         BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
@@ -133,7 +133,7 @@ public class AuthResource {
 
     }
     
-    private UserInfo createUserInfo() {
+    private UserInfo createUserInfo(AuthorizationRequest request) {
 
         SecurityContext context = SecurityContextAssociation.getSecurityContext();
         SubjectInfo subjectInfo = context.getSubjectInfo();
@@ -149,6 +149,17 @@ public class AuthResource {
             }
             userInfo.setClaim("groups", roles);
         }
+
+        if (request == null) {
+            return userInfo;
+        }
+
+        // for what ever ...
+        userInfo.setClaim("clientID", request.getClientID());
+        if (request.getScope() != null) {
+            userInfo.setClaim("scope", request.getScope());
+        }
+
         return userInfo;
     }
 
