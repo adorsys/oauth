@@ -144,6 +144,7 @@
                   <goal>copy-resources</goal>
                 </goals>
                 <configuration>
+                  <overwrite>true</overwrite>
                   <outputDirectory>target/jboss-eap-${version.jboss.as}/bin</outputDirectory>
                   <resources>
                     <resource>
