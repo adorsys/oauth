@@ -10,12 +10,21 @@
   <packaging>pom</packaging>
 
   <properties>
+    <maven.build.timestamp.format>dd.MM.yyyy-HH:mm:ss</maven.build.timestamp.format>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <version.oauth2-oidc-sdk>4.14.2</version.oauth2-oidc-sdk>
+    <version.httpcomponents>4.3.3</version.httpcomponents>
+    <version.opensaml>3.1.1</version.opensaml>
+    <version.mongodb>3.0.2</version.mongodb>
     <version.arquillian>1.1.4.Final</version.arquillian>
     <version.arquillian.container>7.1.3.Final</version.arquillian.container>
     <version.jboss.as>6.4</version.jboss.as>
     <version.jboss.picketbox>4.0.19.SP8-redhat-1</version.jboss.picketbox>
-    <maven.build.timestamp.format>dd.MM.yyyy-HH:mm:ss</maven.build.timestamp.format>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <version.jboss.metadata>7.0.8.Final-redhat-1</version.jboss.metadata>
+    <version.jboss.web>7.2.0.Final-redhat-1</version.jboss.web>
+    <version.jboss.jaspi-api_1.1_spec>1.0.0.Final</version.jboss.jaspi-api_1.1_spec>
+    <version.slf4j>1.7.7</version.slf4j>
+    <version.junit>4.11</version.junit>
   </properties>
 
   <modules>
@@ -44,7 +53,76 @@
         <scope>import</scope>
         <type>pom</type>
       </dependency>
+      <dependency>
+        <groupId>com.nimbusds</groupId>
+        <artifactId>oauth2-oidc-sdk</artifactId>
+        <version>${version.oauth2-oidc-sdk}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.mail</groupId>
+            <artifactId>mail</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.metadata</groupId>
+        <artifactId>jboss-metadata-common</artifactId>
+        <version>${version.jboss.metadata}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.picketbox</groupId>
+        <artifactId>picketbox</artifactId>
+        <version>${version.jboss.picketbox}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.web</groupId>
+        <artifactId>jbossweb</artifactId>
+        <version>${version.jboss.web}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.spec.javax.security.auth.message</groupId>
+        <artifactId>jboss-jaspi-api_1.1_spec</artifactId>
+        <version>${version.jboss.jaspi-api_1.1_spec}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient-cache</artifactId>
+        <version>${version.httpcomponents}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+        <version>${version.httpcomponents}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mongodb</groupId>
+        <artifactId>mongodb-driver</artifactId>
+        <version>${version.mongodb}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${version.slf4j}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${version.junit}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>${version.slf4j}</version>
+        <scope>test</scope>
+      </dependency>
     </dependencies>
+
   </dependencyManagement>
 
   <build>
