@@ -291,8 +291,6 @@ public class OAuthServerAuthModule implements ServerAuthModule {
             throw new AuthException(e.getMessage());
         }
 
-        Principal p = request.getUserPrincipal();
-
         return true;
     }
 
