@@ -1,8 +1,9 @@
-package de.adorsys.oauth.client.jaspic;
+package de.adorsys.oauth.saml.bridge;
 
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import javax.security.auth.message.config.AuthConfigFactory;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -16,24 +17,28 @@ import javax.servlet.annotation.WebListener;
 @SuppressWarnings("unused")
 public class JaspicStartupListener implements ServletContextListener {
 
-    private OAuthAuthConfigProvider configProvider;
+    private SamlAuthConfigProvider configProvider;
 
     @Override
     public void contextInitialized(ServletContextEvent servletContextEvent) {
-        // extract all oauth-properties from servletContext
         Map<String, String> properties = new HashMap<>();
-        ServletContext servletContext = servletContextEvent.getServletContext();
+        for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
+            if (entry.getKey().toString().startsWith("saml.")) {
+                properties.put((String) entry.getKey(), (String) entry.getValue());
+            }
+        }
 
+        ServletContext servletContext = servletContextEvent.getServletContext();
         Enumeration<String> paramEnum = servletContext.getInitParameterNames();
         while (paramEnum.hasMoreElements()) {
             String key = paramEnum.nextElement();
-            if (!key.startsWith("oauth.")) {
+            if (!key.startsWith("saml.")) {
                 continue;
             }
             properties.put(key, servletContext.getInitParameter(key));
         }
 
-        configProvider = new OAuthAuthConfigProvider(properties, AuthConfigFactory.getFactory());
+        configProvider = new SamlAuthConfigProvider(properties, AuthConfigFactory.getFactory());
     }
 
     @Override

@@ -34,6 +34,7 @@
     <module>oauth-server-sample</module>
     <module>oauth-client-jaas</module>
     <module>oauth-client-jaspic</module>
+    <module>oauth-saml-bridge</module>
     <module>oauth-test</module>
   </modules>
 
@@ -102,6 +103,11 @@
         <groupId>org.mongodb</groupId>
         <artifactId>mongodb-driver</artifactId>
         <version>${version.mongodb}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opensaml</groupId>
+        <artifactId>opensaml-saml-impl</artifactId>
+        <version>${version.opensaml}</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
