@@ -288,18 +288,9 @@
                     </login-module>
                   </authentication>
                 </security-domain>
-                <security-domain name="oauth" cache-type="default">
-                  <authentication>
-                    <login-module code="Identity" flag="requisite">
-                      <module-option name="principal" value="jduke"/>
-                      <module-option name="roles" value="admin,user"/>
-                    </login-module>
-                    <login-module code="de.adorsys.oauth.server.OAuthRoleLoginModule" flag="optional" />
-                  </authentication>
-                </security-domain>
                 <security-domain name="oauth-client" cache-type="default">
                   <authentication>
-                    <login-module module="oauth" code="de.adorsys.oauth.OAuthLoginModule" flag="required" />
+                    <login-module module="oauth" code="de.adorsys.oauth.client.jaas.OAuthLoginModule" flag="required" />
                   </authentication>
                 </security-domain>
             </security-domains>

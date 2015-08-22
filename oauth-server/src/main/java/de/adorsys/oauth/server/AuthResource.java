@@ -12,6 +12,7 @@ import com.nimbusds.oauth2.sdk.AuthorizationErrorResponse;
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse;
 import com.nimbusds.oauth2.sdk.OAuth2Error;
+import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.oauth2.sdk.id.Subject;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
@@ -75,9 +76,8 @@ public class AuthResource {
     @Consumes("application/x-www-form-urlencoded")
     public Response authorizePost() throws Exception {
 
-        AuthorizationRequest request = AuthorizationRequest.parse(ServletUtils.createHTTPRequest(servletRequest));
-        LOG.info("AuthorizationRequest {}", request.toQueryString());
-        
+        AuthorizationRequest request = resolveAuthorizationRequest();
+
         ResponseBuilder response = Response.status(302).header("Authorization", null); // remove existing auth ...
         
         if (request.getRedirectionURI() == null) {
@@ -132,8 +132,34 @@ public class AuthResource {
         return authorizePost();
 
     }
-    
+
+    /**
+     * resolveAuthorizationRequest
+     */
+    private AuthorizationRequest resolveAuthorizationRequest() throws ParseException {
+        try {
+            return AuthorizationRequest.parse(ServletUtils.createHTTPRequest(servletRequest));
+        } catch (Exception e) {
+            // ignore
+        }
+        // sometimes during some redirections or idp chaining we get an POST with query string
+        String query = servletRequest.getQueryString();
+        if (query != null) {
+            return AuthorizationRequest.parse(query);
+        }
+
+        throw  new ParseException(String.format("unable to resolve AuthorizationRequest from %s", servletRequest.getRequestURI()));
+    }
+
+    /**
+     * resolveAuthorizationRequest
+     */
     private UserInfo createUserInfo(AuthorizationRequest request) {
+
+        Object object = servletRequest.getAttribute("userInfo");
+        if (object != null && object instanceof UserInfo) {
+            return (UserInfo) object;
+        }
 
         SecurityContext context = SecurityContextAssociation.getSecurityContext();
         SubjectInfo subjectInfo = context.getSubjectInfo();

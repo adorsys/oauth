@@ -1,4 +1,4 @@
-package de.adorsys.oauth.saml.bridge;
+package de.adorsys.oauth.saml.bridge.test;
 
 import org.apache.commons.codec.binary.Base64;
 
@@ -25,6 +25,7 @@ import javax.xml.transform.stream.StreamSource;
 /**
  * UserAgent
  */
+@SuppressWarnings("unused")
 public class UserAgent {
 
     private HttpURLConnection connection;
@@ -67,11 +68,29 @@ public class UserAgent {
     }
 
     /**
-     * followRedirect
+     * authorize
      */
     public UserAgent authorize(String user, String password) {
         try {
             String authorization = String.format("Basic %s", Base64.encodeBase64String(String.format("%s:%s", user, password).getBytes()));
+            connection.setRequestProperty("Authorization", authorization);
+            System.out.printf("%s: %s%n", "Authorization", authorization);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        return this;
+    }
+
+    /**
+     * bearer
+     */
+    public UserAgent bearer(String token) {
+        String value = resolveValue(token, false);
+        if (value == null) {
+            value = token;
+        }
+        try {
+            String authorization = String.format("Bearer %s", value);
             connection.setRequestProperty("Authorization", authorization);
             System.out.printf("%s: %s%n", "Authorization", authorization);
         } catch (Exception e) {
@@ -130,6 +149,21 @@ public class UserAgent {
         return this;
     }
 
+    /**
+     * status
+     */
+    public UserAgent status() {
+        try {
+            System.out.printf("Status: %s%n", connection == null ? "???" : String.valueOf(connection.getResponseCode()));
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        return this;
+    }
+
+    /**
+     * postUrlEncoded
+     */
     public UserAgent postUrlEncoded(String... parameters) {
         try {
             connection = (HttpURLConnection) url.openConnection();
@@ -275,7 +309,11 @@ public class UserAgent {
     private String resolveValue(String name, boolean required) {
         String value = values.get(name);
         if (value == null && matcher != null) {
-            value = matcher.group(name);
+            try {
+                value = matcher.group(name);
+            } catch (Exception e) {
+                //
+            }
         }
         if (value == null && required) {
             throw new IllegalStateException(String.format("Parameter %s not found !", name));
@@ -288,5 +326,14 @@ public class UserAgent {
         storeContent();
         System.out.printf("Content: %s%n", resolveValue("content"));
         return this;
+    }
+
+    public UserAgent showValue(String parameter) {
+        System.out.printf("%s: %s%n", parameter, resolveValue(parameter));
+        return this;
+    }
+
+    public void goodBye() {
+        System.out.println("\nso long and thanks for all the fish !");
     }
 }

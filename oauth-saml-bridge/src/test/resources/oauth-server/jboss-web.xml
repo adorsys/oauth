@@ -1,0 +1,9 @@
+<jboss-web>
+  <context-root>oauth</context-root>
+  <security-domain>other</security-domain>
+
+  <valve>
+    <class-name>org.jboss.as.web.security.jaspi.WebJASPIAuthenticator</class-name>
+  </valve>
+
+</jboss-web>

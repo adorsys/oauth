@@ -152,8 +152,6 @@
                       <directory>src/test/resources</directory>
                       <includes>
                         <include>standalone-test.xml</include>
-                        <include>test-users.properties</include>
-                        <include>test-roles.properties</include>
                       </includes>
                     </resource>
                   </resources>

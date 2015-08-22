@@ -14,14 +14,14 @@ import javax.security.auth.message.config.ServerAuthConfig;
 @SuppressWarnings({"unused", "UnusedParameters"})
 public class SamlAuthConfigProvider implements AuthConfigProvider {
 
-    private Map<String, String> properties;
-    private String registrationId;
+    private final Map<String, String> properties;
+    private final String registrationId;
+   // private final String contextPath;
 
-    public SamlAuthConfigProvider(Map<String, String> properties, AuthConfigFactory factory) {
-        if (factory != null) {
-            registrationId = factory.registerConfigProvider(this, "HttpServlet", null, "oauth");
-        }
+    public SamlAuthConfigProvider(Map<String, String> properties, AuthConfigFactory factory, String contextPath) {
+        this.registrationId = factory.registerConfigProvider(this, "HttpServlet", "localhost " + contextPath, "oauth");
         this.properties = properties;
+ //       this.contextPath = contextPath;
     }
 
     @Override

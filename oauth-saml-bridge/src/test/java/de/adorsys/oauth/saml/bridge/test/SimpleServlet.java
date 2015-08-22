@@ -1,4 +1,4 @@
-package de.adorsys.oauth.saml.bridge;
+package de.adorsys.oauth.saml.bridge.test;
 
 import java.io.IOException;
 import java.io.Writer;

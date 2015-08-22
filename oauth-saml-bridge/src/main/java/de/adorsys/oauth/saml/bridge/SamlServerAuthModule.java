@@ -73,7 +73,6 @@ public class SamlServerAuthModule implements ServerAuthModule {
         this.callbackHandler = callbackHandler;
         this.idpUrl = (String) properties.get("saml.idp.url");
 
-        //ConfigurationService.register(XMLObjectProviderRegistry.class, new XMLObjectProviderRegistry());
         try {
             InitializationService.initialize();
         } catch (InitializationException e) {
@@ -112,6 +111,8 @@ public class SamlServerAuthModule implements ServerAuthModule {
             return AuthStatus.SUCCESS;
         }
 
+        LOG.debug("request {}", request.getRequestURL());
+
         try {
             UserInfo userInfo = checkSamlRespone(request);
             if (userInfo != null) {
@@ -121,7 +122,8 @@ public class SamlServerAuthModule implements ServerAuthModule {
             redirectSamlRequest(request, response);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("ups", e);
+            throw new AuthException(e.getMessage());
         }
 
         return AuthStatus.FAILURE;
@@ -145,8 +147,13 @@ public class SamlServerAuthModule implements ServerAuthModule {
         </samlp:AuthnRequest>
          */
 
+        String consumerServiceURL = request.getRequestURL().toString();
+        if (request.getQueryString() != null) {
+            consumerServiceURL = String.format("%s?%s", consumerServiceURL, request.getQueryString());
+        }
+
         AuthnRequest authnRequest = new AuthnRequestBuilder().buildObject();
-        authnRequest.setAssertionConsumerServiceURL(request.getRequestURL().toString());
+        authnRequest.setAssertionConsumerServiceURL(consumerServiceURL);
         authnRequest.setDestination(idpUrl);
         authnRequest.setForceAuthn(false);
         authnRequest.setID(UUID.randomUUID().toString());
@@ -161,7 +168,7 @@ public class SamlServerAuthModule implements ServerAuthModule {
         authnRequest.setNameIDPolicy(nameIDPolicy);
 
         Issuer issuer = new IssuerBuilder().buildObject();
-        issuer.setValue(request.getRequestURL().toString());
+        issuer.setValue(consumerServiceURL);
         authnRequest.setIssuer(issuer);
 
         MessageContext<SAMLObject> messageContext = new MessageContext();
@@ -193,6 +200,8 @@ public class SamlServerAuthModule implements ServerAuthModule {
         Response response = (Response) decoder.getMessageContext().getMessage();
 
         List<String> groups = new ArrayList<>();
+        groups.add("oauth"); // default for oauth
+
         String name = null;
         for (Assertion assertion : response.getAssertions()) {
             if (assertion.getSubject() != null) {

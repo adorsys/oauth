@@ -99,6 +99,13 @@
           <type>zip</type>
           <scope>test</scope>
         </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>oauth-client-jaas</artifactId>
+          <version>${project.version}</version>
+          <type>zip</type>
+          <scope>test</scope>
+        </dependency>
       </dependencies>
       <build>
         <plugins>
@@ -117,6 +124,18 @@
                   <includeArtifactIds>jboss-eap</includeArtifactIds>
                   <includeGroupIds>org.jboss.as</includeGroupIds>
                   <outputDirectory>target</outputDirectory>
+                </configuration>
+              </execution>
+              <execution>
+                <id>install-oauth-client</id>
+                <phase>process-sources</phase>
+                <goals>
+                  <goal>unpack-dependencies</goal>
+                </goals>
+                <configuration>
+                  <excludeTransitive>false</excludeTransitive>
+                  <includeArtifactIds>oauth-client-jaas</includeArtifactIds>
+                  <outputDirectory>target/jboss-eap-${version.jboss.as}/modules</outputDirectory>
                 </configuration>
               </execution>
             </executions>

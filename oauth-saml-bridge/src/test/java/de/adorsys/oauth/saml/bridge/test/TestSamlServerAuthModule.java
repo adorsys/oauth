@@ -1,4 +1,4 @@
-package de.adorsys.oauth.saml.bridge;
+package de.adorsys.oauth.saml.bridge.test;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
@@ -28,7 +28,7 @@ public class TestSamlServerAuthModule {
                 .addPackages(true, "de.adorsys.oauth.saml.bridge")
                 .addAsLibraries(dependencies)
                 .addAsWebInfResource("beans.xml")
-                .addAsWebInfResource("jboss-web.xml")
+                .addAsWebInfResource(new File("src/test/resources/jboss-web-saml.xml"), "jboss-web.xml")
                 .addAsWebInfResource("web.xml")
                 ;
     }
@@ -48,7 +48,7 @@ public class TestSamlServerAuthModule {
                 .openConnection()
                 .authorize("jduke", "secret")
                 .expect(404)
-                    .parseContent("(.*)(ACTION=\")(?<Action>.*)(\">)(<INPUT TYPE=\"HIDDEN\" NAME=\"SAMLResponse\" )(VALUE=\")(?<SAMLResponse>.*)(\"/>.*)")
+                    .parseContent("(.*ACTION=\")(?<Action>.*)(\">)(<INPUT TYPE=\"HIDDEN\" NAME=\"SAMLResponse\" )(VALUE=\")(?<SAMLResponse>.*)(\"/>.*)")
                     .dumpXml("SAMLResponse", true)
                 .url("Action")
                 .postUrlEncoded("SAMLResponse")

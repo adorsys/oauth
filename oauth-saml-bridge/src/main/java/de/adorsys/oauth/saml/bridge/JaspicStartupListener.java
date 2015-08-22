@@ -1,5 +1,8 @@
 package de.adorsys.oauth.saml.bridge;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,10 +20,16 @@ import javax.servlet.annotation.WebListener;
 @SuppressWarnings("unused")
 public class JaspicStartupListener implements ServletContextListener {
 
+    private static final Logger LOG = LoggerFactory.getLogger(JaspicStartupListener.class);
+
     private SamlAuthConfigProvider configProvider;
 
     @Override
     public void contextInitialized(ServletContextEvent servletContextEvent) {
+
+        String contextPath = servletContextEvent.getServletContext().getContextPath();
+        LOG.info("initialize for {}", contextPath);
+
         Map<String, String> properties = new HashMap<>();
         for (Entry<Object, Object> entry : System.getProperties().entrySet()) {
             if (entry.getKey().toString().startsWith("saml.")) {
@@ -38,7 +47,7 @@ public class JaspicStartupListener implements ServletContextListener {
             properties.put(key, servletContext.getInitParameter(key));
         }
 
-        configProvider = new SamlAuthConfigProvider(properties, AuthConfigFactory.getFactory());
+        configProvider = new SamlAuthConfigProvider(properties, AuthConfigFactory.getFactory(), contextPath);
     }
 
     @Override
