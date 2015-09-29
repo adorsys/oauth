@@ -43,7 +43,10 @@
       <dependency>
         <groupId>org.jboss.spec</groupId>
         <artifactId>jboss-javaee-6.0</artifactId>
+        <!-- 
         <version>3.0.2.Final-redhat-15</version>
+         -->
+		<version>3.0.3.Final</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>

@@ -6,5 +6,9 @@ target/
 *.war
 *.ear
 *.swap
+.project
+.classpath
+.settings/
+
 
 
