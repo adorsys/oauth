@@ -3,7 +3,7 @@
 target/
 
 *.class
-*.war
+# *.war required for idp.war
 *.ear
 *.swap
 .project
