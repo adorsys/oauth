@@ -1,5 +1,7 @@
 package de.adorsys.oauth.saml.bridge.test;
 
+import java.io.File;
+
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
@@ -10,8 +12,6 @@ import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.File;
-
 /**
  * TestSamlAuthModule
  */
@@ -21,7 +21,7 @@ public class TestSamlServerAuthModule {
     @Deployment
     public static Archive createDeployment() {
 
-        File[] dependencies = Maven.configureResolver().workOffline(true).loadPomFromFile("pom.xml").importRuntimeDependencies()
+        File[] dependencies = Maven.configureResolver().workOffline(false).loadPomFromFile("pom.xml").importRuntimeDependencies()
                 .resolve("org.opensaml:opensaml-saml-impl").withTransitivity().asFile();
 
         return ShrinkWrap.create(WebArchive.class, "sample.war")
