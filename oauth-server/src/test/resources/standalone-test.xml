@@ -277,6 +277,7 @@
                 </security-domain>
                 <security-domain name="oauth" cache-type="default">
                     <authentication>
+                        <login-module code="de.adorsys.oauth.server.OAuthInfoLoginModule" flag="optional"/>
                         <login-module code="UsersRoles" flag="requisite">
                             <module-option name="password-stacking" value="useFirstPass"/>
                             <module-option name="usersProperties" value="${jboss.server.config.dir}/test-users.properties"/>
