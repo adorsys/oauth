@@ -17,6 +17,8 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
+import javax.security.jacc.PolicyContext;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * OAuthRoleLoginModule
@@ -28,8 +30,6 @@ public class OAuthLoginModule implements LoginModule {
     private Subject subject;
     private CallbackHandler callbackHandler;
     private Map sharedState;
-
-    static final ThreadLocal<UserInfo> USER_INFO = new ThreadLocal<>();
 
     @Override
     public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options) {
@@ -68,7 +68,9 @@ public class OAuthLoginModule implements LoginModule {
             subject.getPrincipals().add(bearerGroup);
             bearerGroup.addMember(new SimplePrincipal(bearer));
 
-            UserInfo userInfo = USER_INFO.get();
+            HttpServletRequest request = (HttpServletRequest) PolicyContext.getContext(HttpServletRequest.class.getName());
+            UserInfo userInfo = (UserInfo) request.getAttribute(UserInfo.class.getName());
+
             if (userInfo != null && userInfo.getSubject().getValue().equals(name)) {
                 LOG.info("UserInfo: {} {}", userInfo.getSubject().getValue(), userInfo.getClaim("groups"));
                 Group rolesGroup = new SimpleGroup("Roles");
@@ -86,8 +88,6 @@ public class OAuthLoginModule implements LoginModule {
             
         } catch (Exception e) {
             throw  new LoginException(e.getMessage());
-        } finally {
-            USER_INFO.remove();
         }
     }
 

@@ -54,7 +54,7 @@
 				<configuration>
 					<archive>
 						<manifestEntries>
-							<Dependencies>org.jboss.as.server,org.jboss.as.web</Dependencies>
+							<Dependencies>org.jboss.as.server,org.jboss.as.web,javax.security.jacc.api</Dependencies>
 						</manifestEntries>
 					</archive>
 				</configuration>
