@@ -32,11 +32,13 @@
     <module>oauth-server</module>
     <module>oauth-tokenstore-jpa</module>
     <module>oauth-tokenstore-mongodb</module>
+    <module>oauth-loginmodule</module>
     <module>oauth-server-sample</module>
     <module>oauth-client-jaas</module>
     <module>oauth-client-jaspic</module>
     <module>oauth-saml-bridge</module>
     <module>oauth-test</module>
+    <module>oauth-login-theme</module>
   </modules>
 
   <dependencyManagement>
@@ -104,6 +106,11 @@
       <dependency>
         <groupId>org.apache.httpcomponents</groupId>
         <artifactId>httpclient</artifactId>
+        <version>${version.httpcomponents}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
         <version>${version.httpcomponents}</version>
       </dependency>
       <dependency>

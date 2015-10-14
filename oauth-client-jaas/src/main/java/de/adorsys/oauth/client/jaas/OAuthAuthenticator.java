@@ -75,10 +75,14 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 
 		// 1. check for token or auth_grant
 		AccessToken accessToken = resolveAccessToken(request, requestURI);
-		if (accessToken != null && authenticate(accessToken, request, response)) {
+		if (accessToken == null) {
+			principal = context.getRealm().authenticate("guest", "NONE");
+			request.setUserPrincipal(principal);
+			return true;
+		} else if (authenticate(accessToken, request, response)) {
 			return true;
 		}
-
+		
 		if (!supportAuthCode) {
 			response.setStatus(401);
 			return false;

@@ -20,8 +20,13 @@ import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 import java.net.URI;
 import java.security.Principal;
+import java.security.acl.Group;
 import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -165,16 +170,28 @@ public class AuthResource {
         SubjectInfo subjectInfo = context.getSubjectInfo();
         String name = principal.getName();
 
-        List<String> roles = new ArrayList<>();
+        Set<String> roles = new HashSet<>();
         UserInfo userInfo = new UserInfo(new Subject(name));
         userInfo.setName(name);
+        
+        Set<Principal> principals = subjectInfo.getAuthenticatedSubject().getPrincipals();
+        for (Principal principal : principals) {
+			if (principal instanceof Group) { 
+				Group group = (Group) principal;
+				Enumeration<? extends Principal> members = group.members();
+				while (members.hasMoreElements()) {
+					Principal role = (Principal) members.nextElement();
+					roles.add(role.getName());
+				}
+			}
+		}
 
         if (subjectInfo.getRoles() != null) {
             for (Role role : subjectInfo.getRoles().getRoles()) {
                 roles.add(role.getRoleName());
             }
-            userInfo.setClaim("groups", roles);
         }
+        userInfo.setClaim("groups", roles);
 
         if (request == null) {
             return userInfo;

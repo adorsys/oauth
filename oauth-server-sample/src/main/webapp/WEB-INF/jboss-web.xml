@@ -1,4 +1,13 @@
 <jbopss-web>
-  <context-root>oauth</context-root>
-  <security-domain>oauth</security-domain>
+  <security-domain>oauth-idp</security-domain>
+
+  <valve>
+    <class-name>de.adorsys.oauth.loginmodule.authdispatcher.OAuthAuthenticationDispatcher</class-name>
+    <module>de.adorsys.oauth.oauth-loginmodule</module>
+    <param>
+      <param-name>authEndpoint</param-name>
+      <param-value>org.apache.catalina.authenticator.BasicAuthenticator,org.apache.catalina.authenticator.FormAuthenticator</param-value>
+    </param>
+  </valve>
+
 </jbopss-web>

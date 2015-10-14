@@ -5,7 +5,7 @@
   <security-constraint>
     <web-resource-collection>
       <web-resource-name>auth</web-resource-name>
-      <url-pattern>/auth</url-pattern>
+      <url-pattern>/api/auth</url-pattern>
       <http-method>GET</http-method>
       <http-method>POST</http-method>
     </web-resource-collection>
@@ -15,8 +15,14 @@
   </security-constraint>
   
   <login-config>
-    <realm-name>oauth-server</realm-name>
     <auth-method>BASIC</auth-method>
+    <form-login-config>
+    	<form-login-page>/login/login.jsp</form-login-page>
+    	<form-error-page>/login/login-error.jsp</form-error-page>
+    </form-login-config>
   </login-config>
+  <security-role>
+  	<role-name>oauth</role-name>
+  </security-role>
   
 </web-app>
