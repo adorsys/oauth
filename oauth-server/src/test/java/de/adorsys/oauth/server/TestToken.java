@@ -1,78 +1,60 @@
+/**
+ * TestToken.java
+ */
 package de.adorsys.oauth.server;
 
+import com.nimbusds.oauth2.sdk.AccessTokenResponse;
+import com.nimbusds.oauth2.sdk.ResourceOwnerPasswordCredentialsGrant;
+import com.nimbusds.oauth2.sdk.TokenRequest;
+import com.nimbusds.oauth2.sdk.auth.Secret;
+import com.nimbusds.oauth2.sdk.http.HTTPRequest;
+import com.nimbusds.oauth2.sdk.http.HTTPResponse;
+import org.apache.commons.codec.binary.Base64;
 import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.shrinkwrap.api.Archive;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.nimbusds.oauth2.sdk.token.AccessToken;
-import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
-import com.nimbusds.oauth2.sdk.token.RefreshToken;
+import java.net.HttpURLConnection;
 
-import java.util.concurrent.TimeUnit;
-import javax.ejb.EJB;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
-/**
- * TestToken
- */
 public class TestToken extends ArquillianBase {
 
     @Deployment
     public static Archive createDeployment() {
         return createTestWar();
     }
-    
-    @EJB
-    private TokenStore tokenStore;
 
-    @Test
-    public void testToken() throws Exception {
-
-        BearerAccessToken bearerAccessToken = new BearerAccessToken();
-        
-        String id = tokenStore.add(bearerAccessToken, null);
-        assertEquals(id, bearerAccessToken.getValue());
-
-        RefreshToken refreshToken = tokenStore.loadRefreshToken(id);
-        assertNull(refreshToken);
-
-        AccessToken accessToken = tokenStore.load(id);
-        assertNotNull(accessToken);
-        
-        System.out.println(accessToken.toJSONString());
-
-        assertEquals(accessToken, bearerAccessToken);
-
-        tokenStore.remove(id);
-        assertNull(tokenStore.load(id));
+    @BeforeClass
+    public static void beforeClass() {
+        HttpURLConnection.setFollowRedirects(false);
     }
 
     @Test
-    public void testValid() throws Exception {
-        long lifetime = 2;
-        BearerAccessToken bearerAccessToken = new BearerAccessToken(lifetime, null);
-        String id = tokenStore.add(bearerAccessToken, null);
+    @RunAsClient
+    public void testPasswortGrant() throws Exception {
+        //Resource owner credentials
+        TokenRequest tokenRequest = new TokenRequest(
+                getTokenEndpoint(),
+                getClientID(),
+                new ResourceOwnerPasswordCredentialsGrant("resourceowner", new Secret("resourceowner_pw")));
 
-        AccessToken accessToken = tokenStore.load(id);
-        assertNotNull(accessToken);
-        
-        System.out.println(accessToken.toJSONString());
+        //Client secret
+        HTTPRequest httpRequest = tokenRequest.toHTTPRequest();
+        httpRequest.setAuthorization("Basic " + Base64.encodeBase64String("test:123456".getBytes()));
 
-        assertTrue(tokenStore.isValid(id));
-        
-        try {
-            TimeUnit.MILLISECONDS.sleep(lifetime * 1000 + 100);
-        } catch (Exception e) {
-            //
-        }
+        //send
+        HTTPResponse tokenResponse = httpRequest.send();
 
-        assertFalse(tokenStore.isValid(id));
-        
-        tokenStore.remove(id);
+        tokenResponse.indicatesSuccess();
+
+        AccessTokenResponse accessTokenResponse = AccessTokenResponse.parse(tokenResponse);
+        assertNotNull(accessTokenResponse.getAccessToken());
+        assertNotNull(accessTokenResponse.getRefreshToken());
+
+        System.out.println("access token: " + accessTokenResponse.getAccessToken().toJSONString());
+        System.out.println("refresh token: " + accessTokenResponse.getRefreshToken().toJSONString());
     }
 }
