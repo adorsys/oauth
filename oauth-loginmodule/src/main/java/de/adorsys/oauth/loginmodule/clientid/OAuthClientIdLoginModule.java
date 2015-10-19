@@ -10,16 +10,15 @@ import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
-import javax.security.jacc.PolicyContext;
-import javax.security.jacc.PolicyContextException;
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.catalina.connector.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.id.ClientID;
+
+import de.adorsys.oauth.loginmodule.authdispatcher.HttpContext;
 
 /**
  * 
@@ -64,12 +63,7 @@ public class OAuthClientIdLoginModule implements LoginModule {
 
 
     private boolean validateRequest() throws LoginException {
-    	HttpServletRequest request;
-		try {
-			request = (HttpServletRequest) PolicyContext.getContext(HttpServletRequest.class.getName());
-		} catch (PolicyContextException e) {
-			throw new LoginException("problem accessing PolicyContext. " + e.getMessage());
-		}
+    	HttpServletRequest request = HttpContext.SERVLET_REQUEST.get();
     	Principal principal = request.getUserPrincipal();
         if (principal != null) {
             return false;

@@ -114,57 +114,20 @@ public class OAuthAuthenticationDispatcher extends ValveBase {
 			// force catalina to parse parameters and content now, otherwise sometimes the content is lost ...
 	        request.getParameterNames();
 
-	        setHttpRequestInPolicyContext(request, response);
-			
-			Set<Entry<AuthenticatorMatcher,ValveBase>> entrySet = mapper.entrySet();
-			for (Entry<AuthenticatorMatcher, ValveBase> entry : entrySet) {
-				if (entry.getKey().match(request)) {
-					entry.getValue().invoke(request, response);
-					return;
+	        try {
+	        	HttpContext.init(request, response);
+				
+				Set<Entry<AuthenticatorMatcher,ValveBase>> entrySet = mapper.entrySet();
+				for (Entry<AuthenticatorMatcher, ValveBase> entry : entrySet) {
+					if (entry.getKey().match(request)) {
+						entry.getValue().invoke(request, response);
+						return;
+					}
 				}
-			}
+	        } finally {
+	        	HttpContext.release();
+	        }
 		}
 		getNext().invoke(request, response);
-	}
-
-	private void setHttpRequestInPolicyContext(final Request request, final Response response) throws IOException {
-		try {
-
-		    PolicyContext.registerHandler(HttpServletResponse.class.getName(), new PolicyContextHandler() {
-		        @Override
-		        public Object getContext(String key, Object o) throws PolicyContextException {
-		            return response;
-		        }
-
-		        @Override
-		        public String[] getKeys() throws PolicyContextException {
-		            return new String[] { HttpServletResponse.class.getName() };
-		        }
-
-		        @Override
-		        public boolean supports(String key) throws PolicyContextException {
-		            return key.equals(HttpServletResponse.class.getName());
-		        }
-		    }, true);
-
-		    PolicyContext.registerHandler(HttpServletRequest.class.getName(), new PolicyContextHandler() {
-		        @Override
-		        public Object getContext(String key, Object o) throws PolicyContextException {
-		            return request;
-		        }
-
-		        @Override
-		        public String[] getKeys() throws PolicyContextException {
-		            return new String[] { HttpServletRequest.class.getName() };
-		        }
-
-		        @Override
-		        public boolean supports(String key) throws PolicyContextException {
-		            return key.equals(HttpServletRequest.class.getName());
-		        }
-		    }, true);
-		} catch (Exception e) {
-		    throw new IOException(e);
-		}
 	}
 }

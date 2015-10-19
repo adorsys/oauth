@@ -181,43 +181,48 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 	private boolean authenticate(AccessToken accessToken, Request request, HttpServletResponse response) {
 
 		LOG.debug("authenticate accessToken {}", accessToken);
-
-		UserInfo userInfo = null;
+		
 		try {
-
-			URI uri = new URI(String.format("%s?id=%s", userInfoEndpoint.toString(), accessToken.getValue()));
-			HttpGet httpGet = new HttpGet(uri);
-
-			httpGet.setHeader("Authorization", new BearerAccessToken(accessToken.getValue()).toAuthorizationHeader());
-
-			HttpCacheContext context = HttpCacheContext.create();
-			CloseableHttpResponse userInfoResponse = cachingHttpClient.execute(httpGet, context);
-			LOG.debug("read userinfo {} {}", accessToken.getValue(), context.getCacheResponseStatus());
-
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			userInfoResponse.getEntity().writeTo(baos);
-
-			userInfo = UserInfo.parse(baos.toString());
-		} catch (Exception e) {
-			LOG.error("ups", e);
+			HttpContext.init(request, response);
+			UserInfo userInfo = null;
+			try {
+	
+				URI uri = new URI(String.format("%s?id=%s", userInfoEndpoint.toString(), accessToken.getValue()));
+				HttpGet httpGet = new HttpGet(uri);
+	
+				httpGet.setHeader("Authorization", new BearerAccessToken(accessToken.getValue()).toAuthorizationHeader());
+	
+				HttpCacheContext context = HttpCacheContext.create();
+				CloseableHttpResponse userInfoResponse = cachingHttpClient.execute(httpGet, context);
+				LOG.debug("read userinfo {} {}", accessToken.getValue(), context.getCacheResponseStatus());
+	
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				userInfoResponse.getEntity().writeTo(baos);
+	
+				userInfo = UserInfo.parse(baos.toString());
+			} catch (Exception e) {
+				LOG.error("ups", e);
+			}
+	
+			if (userInfo == null) {
+				LOG.info("no userInfo available for {}", accessToken.getValue());
+				return false;
+			}
+	
+	        // use the request to provide userinfo in loginmodules
+	        request.setAttribute(UserInfo.class.getName(), userInfo);
+	
+	        Principal principal = context.getRealm().authenticate(userInfo.getSubject().getValue(), accessToken.getValue());
+	        if (supportHttpSession) {
+	            request.getSessionInternal(); // force to create http-session
+	        }
+	        request.setUserPrincipal(principal);
+	        response.setHeader("Authorization", accessToken.toAuthorizationHeader());
+	        register(request, response, principal, "OAUTH", userInfo.getSubject().getValue(), accessToken.getValue());
+	        return true;
+		} finally {
+			HttpContext.release();
 		}
-
-		if (userInfo == null) {
-			LOG.info("no userInfo available for {}", accessToken.getValue());
-			return false;
-		}
-
-        // use the request to provide userinfo in loginmodules
-        request.setAttribute(UserInfo.class.getName(), userInfo);
-
-        Principal principal = context.getRealm().authenticate(userInfo.getSubject().getValue(), accessToken.getValue());
-        if (supportHttpSession) {
-            request.getSessionInternal(); // force to create http-session
-        }
-        request.setUserPrincipal(principal);
-        response.setHeader("Authorization", accessToken.toAuthorizationHeader());
-        register(request, response, principal, "OAUTH", userInfo.getSubject().getValue(), accessToken.getValue());
-        return true;
 	}
 
 	@Override
