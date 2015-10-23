@@ -20,6 +20,7 @@
     <module name="javax.inject.api"/>
     <module name="javax.mail.api"/>
     <module name="javax.servlet.api"/>
+    <module name="javax.security.jacc.api"/>
     <module name="org.slf4j" />
     <module name="org.jboss.as.server" />
     <module name="org.jboss.as.web" />

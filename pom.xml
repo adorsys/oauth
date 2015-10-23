@@ -23,6 +23,7 @@
     <version.jboss.metadata>7.0.8.Final</version.jboss.metadata>
     <version.jboss.web>7.2.0.Final</version.jboss.web>
     <version.jboss.jaspi-api_1.1_spec>1.0.0.Final</version.jboss.jaspi-api_1.1_spec>
+    <version.jboss.jacc-api_1.4_spec>1.0.3.Final</version.jboss.jacc-api_1.4_spec>
     <version.slf4j>1.7.7</version.slf4j>
     <version.junit>4.11</version.junit>
   </properties>
@@ -43,7 +44,7 @@
       <dependency>
         <groupId>org.jboss.spec</groupId>
         <artifactId>jboss-javaee-6.0</artifactId>
-		<version>3.0.3.Final</version>
+        <version>3.0.3.Final</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
@@ -79,7 +80,7 @@
       </dependency>
       <dependency>
         <groupId>org.jboss.as</groupId>
-		<artifactId>jboss-as-web</artifactId>
+        <artifactId>jboss-as-web</artifactId>
         <version>${version.jboss.web}</version>
         <scope>provided</scope>
       </dependency>
@@ -87,6 +88,12 @@
         <groupId>org.jboss.spec.javax.security.auth.message</groupId>
         <artifactId>jboss-jaspi-api_1.1_spec</artifactId>
         <version>${version.jboss.jaspi-api_1.1_spec}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.spec.javax.security.jacc</groupId>
+        <artifactId>jboss-jacc-api_1.4_spec</artifactId>
+        <version>${version.jboss.jacc-api_1.4_spec}</version>
         <scope>provided</scope>
       </dependency>
       <dependency>

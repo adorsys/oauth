@@ -282,9 +282,10 @@
                 </security-domain>
                 <security-domain name="oauth" cache-type="default">
                   <authentication>
+                    <login-module code="de.adorsys.oauth.server.OAuthInfoLoginModule" flag="optional" />
                     <login-module code="Identity" flag="requisite">
-                      <module-option name="principal" value="jduke"/>
-                      <module-option name="roles" value="admin,user"/>
+                        <module-option name="principal" value="jduke"/>
+                        <module-option name="roles" value="admin,user"/>
                     </login-module>
                     <login-module code="de.adorsys.oauth.server.OAuthRoleLoginModule" flag="optional" />
                   </authentication>

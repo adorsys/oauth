@@ -1,13 +1,5 @@
 package de.adorsys.oauth.client.jaas;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.security.Principal;
-
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.authenticator.AuthenticatorBase;
 import org.apache.catalina.connector.Request;
@@ -37,6 +29,13 @@ import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
+import java.security.Principal;
+import javax.servlet.http.HttpServletResponse;
+
 /**
  * OAuthAuthenticator
  */
@@ -49,7 +48,9 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 	private URI tokenEndpoint;
 	private URI userInfoEndpoint;
 	private boolean supportHttpSession;
-	private boolean supportAuthCode;
+
+    // authcode is default enabled
+	private boolean supportAuthCode = true;
 
 	private CloseableHttpClient cachingHttpClient;
 	private ClientID clientId;
@@ -202,19 +203,17 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 			return false;
 		}
 
-		OAuthLoginModule.USER_INFO.set(userInfo);
-		try {
-			Principal principal = context.getRealm().authenticate(userInfo.getSubject().getValue(), accessToken.getValue());
-			if (supportHttpSession) {
-				request.getSessionInternal(); // force to create http-session
-			}
-			request.setUserPrincipal(principal);
-			response.setHeader("Authorization", accessToken.toAuthorizationHeader());
-			register(request, response, principal, "OAUTH", userInfo.getSubject().getValue(), accessToken.getValue());
-			return true;
-		} finally {
-			OAuthLoginModule.USER_INFO.remove();
-		}
+        // use the request to provide userinfo in loginmodules
+        request.setAttribute(UserInfo.class.getName(), userInfo);
+
+        Principal principal = context.getRealm().authenticate(userInfo.getSubject().getValue(), accessToken.getValue());
+        if (supportHttpSession) {
+            request.getSessionInternal(); // force to create http-session
+        }
+        request.setUserPrincipal(principal);
+        response.setHeader("Authorization", accessToken.toAuthorizationHeader());
+        register(request, response, principal, "OAUTH", userInfo.getSubject().getValue(), accessToken.getValue());
+        return true;
 	}
 
 	@Override
