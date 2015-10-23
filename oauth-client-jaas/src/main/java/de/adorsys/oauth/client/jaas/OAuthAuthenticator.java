@@ -4,6 +4,7 @@ import org.apache.catalina.LifecycleException;
 import org.apache.catalina.authenticator.AuthenticatorBase;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.deploy.LoginConfig;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.cache.HttpCacheContext;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -23,7 +24,6 @@ import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.ResponseType.Value;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.http.HTTPResponse;
-import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
@@ -87,7 +87,13 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 		// 2. check for auth_grant
 		AuthorizationCode authorizationCode = resolveAuthorizationCode(request, requestURI);
 		if (authorizationCode != null) {
-			return handleAuthorization(authorizationCode, requestURI, response);
+            AccessTokenResponse accessTokenResponse = handleAuthorization(authorizationCode, requestURI, response);
+            accessToken = accessTokenResponse.getAccessToken();
+
+            // authenticate and store bearer token in session
+            if (accessToken != null && authenticate(accessToken, request, response)) {
+                return true;
+            }
 		}
 
 		// 3. redirect to authEndpoint
@@ -112,24 +118,19 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 	/**
 	 * handleAuthorization - ask tokenEndpoint for access token
 	 */
-	private boolean handleAuthorization(AuthorizationCode authorizationCode, URI redirect, HttpServletResponse response) {
+	private AccessTokenResponse  handleAuthorization(AuthorizationCode authorizationCode, URI redirect, HttpServletResponse response) {
 
 		TokenRequest tokenRequest = new TokenRequest(tokenEndpoint, clientId, new AuthorizationCodeGrant(authorizationCode, redirect));
 
 		try {
-
-			HTTPResponse tokenResponse = tokenRequest.toHTTPRequest().send();
-			tokenResponse.indicatesSuccess();
-			AccessTokenResponse accessTokenResponse = AccessTokenResponse.parse(tokenResponse);
-
-			LOG.info("apply accessTokenResponse {}", accessTokenResponse.toJSONObject().toJSONString());
-			ServletUtils.applyHTTPResponse(accessTokenResponse.toHTTPResponse(), response);
-
+            HTTPResponse tokenResponse = tokenRequest.toHTTPRequest().send();
+            tokenResponse.indicatesSuccess();
+            return AccessTokenResponse.parse(tokenResponse);
 		} catch (Exception e) {
 			LOG.error(e.getClass().getSimpleName() + " " + e.getMessage());
 		}
 
-		return false;
+		return null;
 	}
 
 	/**
@@ -146,17 +147,13 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 	}
 
 	/**
-	 * resolveAccessToken
+	 * resolveAccessToken: auth header and query param supported (form param not supported)
 	 */
 	private AccessToken resolveAccessToken(Request request, URI requestURI) {
-		try {
-			AccessToken accessToken = AuthorizationSuccessResponse.parse(requestURI).getAccessToken();
-			if (accessToken != null) {
-				return accessToken;
-			}
-		} catch (Exception e) {
-			// LOG.debug("invalid authorization-response {}", requestURI);
-		}
+        String queryParam = request.getParameter("access_token");
+        if (StringUtils.isNotEmpty(queryParam)) {
+            return new BearerAccessToken(queryParam);
+        }
 
 		String authorization = request.getHeader("Authorization");
 		if (authorization != null && authorization.contains("Bearer")) {
