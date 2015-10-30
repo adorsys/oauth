@@ -55,21 +55,21 @@ public class TestServlet {
             return;
         }
         
-        String json = new BufferedReader(new InputStreamReader(connection.getInputStream())).readLine();
-        AccessTokenResponse tokenResponse = AccessTokenResponse.parse(JSONObjectUtils.parse(json));
-        System.out.println("access-token  : " + tokenResponse.getAccessToken());
-        System.out.println("lifetime      : " + tokenResponse.getAccessToken().getLifetime());
-        System.out.println("refresh-token : " + tokenResponse.getRefreshToken());
-
-
-        connection = (HttpURLConnection) url.openConnection();
-        connection.setRequestProperty("Authorization", "Bearer " + tokenResponse.getAccessToken());
-        statusCode = connection.getResponseCode();
-
-        if (statusCode != 200) {
-            System.out.println("Status " + statusCode);
-            return;
-        }
+//        String json = new BufferedReader(new InputStreamReader(connection.getInputStream())).readLine();
+//        AccessTokenResponse tokenResponse = AccessTokenResponse.parse(JSONObjectUtils.parse(json));
+//        System.out.println("access-token  : " + tokenResponse.getAccessToken());
+//        System.out.println("lifetime      : " + tokenResponse.getAccessToken().getLifetime());
+//        System.out.println("refresh-token : " + tokenResponse.getRefreshToken());
+//
+//
+//        connection = (HttpURLConnection) url.openConnection();
+//        connection.setRequestProperty("Authorization", "Bearer " + tokenResponse.getAccessToken());
+//        statusCode = connection.getResponseCode();
+//
+//        if (statusCode != 200) {
+//            System.out.println("Status " + statusCode);
+//            return;
+//        }
 
         String cookie = connection.getHeaderField("Cookie");
         if (cookie == null) {
