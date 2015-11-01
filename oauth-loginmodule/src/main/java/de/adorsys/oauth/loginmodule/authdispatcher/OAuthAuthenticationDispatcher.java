@@ -23,6 +23,8 @@ import org.apache.catalina.Valve;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
 import org.apache.catalina.valves.ValveBase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.GrantType;
@@ -38,6 +40,8 @@ import de.adorsys.oauth.loginmodule.clientid.AuthorizationRequestUtil;
  */
 public class OAuthAuthenticationDispatcher extends ValveBase {
 	
+	private static final Logger LOG = LoggerFactory.getLogger(OAuthAuthenticationDispatcher.class);
+	
 	private interface AuthenticatorMatcher {
 		public boolean match(HttpServletRequest request);
 	}
@@ -50,10 +54,10 @@ public class OAuthAuthenticationDispatcher extends ValveBase {
 			@Override
 			public boolean match(HttpServletRequest request) {
 				AuthorizationRequest authRequest = AuthorizationRequestUtil.resolveAuthorizationRequest(request);
-				return authRequest != null;
+				return authRequest != null || request.getParameter("formlogin") != null;
 			}
 			
-		}, (ValveBase)OAuthAuthenticationDispatcher.class.getClassLoader().loadClass("org.apache.catalina.authenticator.FormAuthenticator").newInstance());
+		}, (ValveBase)OAuthAuthenticationDispatcher.class.getClassLoader().loadClass("de.adorsys.oauth.loginmodule.authdispatcher.StatelessFormAuthenticator").newInstance());
 		mapper.put(new AuthenticatorMatcher() {
 
 			@Override
@@ -120,7 +124,9 @@ public class OAuthAuthenticationDispatcher extends ValveBase {
 				Set<Entry<AuthenticatorMatcher,ValveBase>> entrySet = mapper.entrySet();
 				for (Entry<AuthenticatorMatcher, ValveBase> entry : entrySet) {
 					if (entry.getKey().match(request)) {
+						LOG.debug("session exists b: {}", request.getSessionInternal(false) != null);
 						entry.getValue().invoke(request, response);
+						LOG.debug("session exists a: {}", request.getSessionInternal(false) != null);
 						return;
 					}
 				}
