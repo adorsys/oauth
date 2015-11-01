@@ -45,7 +45,7 @@ public class TokenEntity {
     @Column(name = "TOKEN")
     private String token;
 
-    @Column(name = "USER_INFO")
+    @Column(name = "USER_INFO", length = 10000)
     private String userInfo;
 
     @Column(name = "EXPIRES")

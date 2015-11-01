@@ -1,9 +1,5 @@
 package de.adorsys.oauth.server;
 
-import org.jboss.security.SecurityContext;
-import org.jboss.security.SecurityContextAssociation;
-import org.jboss.security.SubjectInfo;
-import org.jboss.security.identity.Role;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,19 +10,10 @@ import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse;
 import com.nimbusds.oauth2.sdk.OAuth2Error;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
-import com.nimbusds.oauth2.sdk.id.Subject;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 import java.net.URI;
-import java.security.Principal;
-import java.security.acl.Group;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -58,10 +45,10 @@ public class AuthResource {
     private ServletContext servletContext;
 
     @Inject
-    private TokenStore tokenStore;
-    
+    private UserInfoFactory userInfoFactory;
+
     @Inject
-    private Principal principal;
+    private TokenStore tokenStore;
 
     private long tokenLifetime;
 
@@ -156,42 +143,8 @@ public class AuthResource {
         throw  new ParseException(String.format("unable to resolve AuthorizationRequest from %s", servletRequest.getRequestURI()));
     }
 
-    /**
-     * resolveAuthorizationRequest
-     */
     private UserInfo createUserInfo(AuthorizationRequest request) {
-
-        Object object = servletRequest.getAttribute("userInfo");
-        if (object != null && object instanceof UserInfo) {
-            return (UserInfo) object;
-        }
-
-        SecurityContext context = SecurityContextAssociation.getSecurityContext();
-        SubjectInfo subjectInfo = context.getSubjectInfo();
-        String name = principal.getName();
-
-        Set<String> roles = new HashSet<>();
-        UserInfo userInfo = new UserInfo(new Subject(name));
-        userInfo.setName(name);
-        
-        Set<Principal> principals = subjectInfo.getAuthenticatedSubject().getPrincipals();
-        for (Principal principal : principals) {
-			if (principal instanceof Group) { 
-				Group group = (Group) principal;
-				Enumeration<? extends Principal> members = group.members();
-				while (members.hasMoreElements()) {
-					Principal role = (Principal) members.nextElement();
-					roles.add(role.getName());
-				}
-			}
-		}
-
-        if (subjectInfo.getRoles() != null) {
-            for (Role role : subjectInfo.getRoles().getRoles()) {
-                roles.add(role.getRoleName());
-            }
-        }
-        userInfo.setClaim("groups", roles);
+        UserInfo userInfo = userInfoFactory.createUserInfo(servletRequest);
 
         if (request == null) {
             return userInfo;
@@ -205,7 +158,4 @@ public class AuthResource {
 
         return userInfo;
     }
-
-
-
 }

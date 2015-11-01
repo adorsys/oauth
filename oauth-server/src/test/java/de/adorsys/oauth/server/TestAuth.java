@@ -68,7 +68,12 @@ public class TestAuth extends ArquillianBase {
                 new AuthorizationCodeGrant(successResponse.getAuthorizationCode(), getRedirect("test")));
 
 
-        HTTPResponse tokenResponse = tokenRequest.toHTTPRequest().send();
+        //Client secret
+        HTTPRequest httpRequest2 = tokenRequest.toHTTPRequest();
+        httpRequest2.setAuthorization("Basic " + Base64.encodeBase64String("test:123456".getBytes()));
+
+        //send
+        HTTPResponse tokenResponse = httpRequest2.send();
         tokenResponse.indicatesSuccess();
 
         AccessTokenResponse accessTokenResponse = AccessTokenResponse.parse(tokenResponse);
