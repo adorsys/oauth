@@ -7,9 +7,7 @@
 <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
-<link rel="apple-touch-icon" href="/oauth-login-theme/images/apple-touch-icon.png" />
-<link rel="shortcut icon" href="/oauth-login-theme/images/favicon.png" />
-<link rel="stylesheet" href="/oauth-login-theme/css/bootstrap.css"/>
+<link rel="shortcut icon" href="/oauth-login-theme/img/favicon.ico" />
 <link rel="stylesheet" href="/oauth-login-theme/css/application.css"/>
 <title translate>title</title>
 <script>
