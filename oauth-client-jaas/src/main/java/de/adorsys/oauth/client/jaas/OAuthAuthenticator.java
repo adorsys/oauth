@@ -1,10 +1,19 @@
 package de.adorsys.oauth.client.jaas;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
+import java.security.Principal;
+
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.authenticator.AuthenticatorBase;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.deploy.LoginConfig;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpEntity;
 import org.apache.http.client.cache.HttpCacheContext;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -28,13 +37,6 @@ import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.security.Principal;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * OAuthAuthenticator
@@ -194,9 +196,14 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 				LOG.debug("read userinfo {} {}", accessToken.getValue(), context.getCacheResponseStatus());
 	
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				userInfoResponse.getEntity().writeTo(baos);
-	
-				userInfo = UserInfo.parse(baos.toString());
+				HttpEntity entity = userInfoResponse.getEntity();
+				if(entity==null){
+					LOG.info("no userInfo available for {}", accessToken.getValue());
+					return false;
+				}
+				entity.writeTo(baos);
+				String userInfoString = baos.toString();
+				userInfo = UserInfo.parse(userInfoString);
 			} catch (Exception e) {
 				LOG.error("ups", e);
 			}
