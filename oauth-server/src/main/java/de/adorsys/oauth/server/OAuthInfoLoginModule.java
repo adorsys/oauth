@@ -1,12 +1,7 @@
 package de.adorsys.oauth.server;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.nimbusds.oauth2.sdk.AuthorizationRequest;
-import com.nimbusds.oauth2.sdk.http.ServletUtils;
-
 import java.util.Map;
+
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.login.LoginException;
@@ -14,6 +9,11 @@ import javax.security.auth.spi.LoginModule;
 import javax.security.jacc.PolicyContext;
 import javax.security.jacc.PolicyContextException;
 import javax.servlet.http.HttpServletRequest;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 
 /**
  * OAuthInfoLoginModule
@@ -109,7 +109,7 @@ public class OAuthInfoLoginModule implements LoginModule {
 
     private AuthorizationRequest resolveAuthorizationRequest(HttpServletRequest servletRequest)  {
         try {
-            return AuthorizationRequest.parse(ServletUtils.createHTTPRequest(servletRequest));
+            return AuthorizationRequest.parse(FixedServletUtils.createHTTPRequest(servletRequest));
         } catch (Exception e) {
             // ignore
         }

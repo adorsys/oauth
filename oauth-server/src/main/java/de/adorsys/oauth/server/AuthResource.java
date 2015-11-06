@@ -1,19 +1,7 @@
 package de.adorsys.oauth.server;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.nimbusds.oauth2.sdk.AuthorizationCode;
-import com.nimbusds.oauth2.sdk.AuthorizationErrorResponse;
-import com.nimbusds.oauth2.sdk.AuthorizationRequest;
-import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse;
-import com.nimbusds.oauth2.sdk.OAuth2Error;
-import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.http.ServletUtils;
-import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
-import com.nimbusds.openid.connect.sdk.claims.UserInfo;
-
 import java.net.URI;
+
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -26,6 +14,18 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.nimbusds.oauth2.sdk.AuthorizationCode;
+import com.nimbusds.oauth2.sdk.AuthorizationErrorResponse;
+import com.nimbusds.oauth2.sdk.AuthorizationRequest;
+import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse;
+import com.nimbusds.oauth2.sdk.OAuth2Error;
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
+import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 
 /**
@@ -130,7 +130,7 @@ public class AuthResource {
      */
     private AuthorizationRequest resolveAuthorizationRequest() throws ParseException {
         try {
-            return AuthorizationRequest.parse(ServletUtils.createHTTPRequest(servletRequest));
+            return AuthorizationRequest.parse(FixedServletUtils.createHTTPRequest(servletRequest));
         } catch (Exception e) {
             // ignore
         }
