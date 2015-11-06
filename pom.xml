@@ -15,6 +15,7 @@
     <version.oauth2-oidc-sdk>4.14.2</version.oauth2-oidc-sdk>
     <version.httpcomponents>4.3.3</version.httpcomponents>
     <version.opensaml>3.1.1</version.opensaml>
+    <version.xmltooling>1.4.4</version.xmltooling>
     <version.mongodb>3.0.2</version.mongodb>
     <version.arquillian>1.1.4.Final</version.arquillian>
     <version.arquillian.container>7.1.3.Final</version.arquillian.container>
@@ -39,6 +40,7 @@
     <module>oauth-saml-bridge</module>
     <module>oauth-test</module>
     <module>oauth-login-theme</module>
+    <module>oauth-server-samlauth</module>
   </modules>
 
   <dependencyManagement>
@@ -123,6 +125,11 @@
         <artifactId>opensaml-saml-impl</artifactId>
         <version>${version.opensaml}</version>
       </dependency>
+	  <dependency>
+		<groupId>org.opensaml</groupId>
+		<artifactId>xmltooling</artifactId>
+		<version>${version.xmltooling}</version>
+	  </dependency>      
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
