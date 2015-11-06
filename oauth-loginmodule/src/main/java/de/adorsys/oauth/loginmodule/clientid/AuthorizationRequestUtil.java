@@ -6,7 +6,8 @@ package de.adorsys.oauth.loginmodule.clientid;
 import javax.servlet.http.HttpServletRequest;
 
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
-import com.nimbusds.oauth2.sdk.http.ServletUtils;
+
+import de.adorsys.oauth.loginmodule.authdispatcher.FixedServletUtils;
 
 /**
  * @author Sandro Sonntag
@@ -18,7 +19,7 @@ public final class AuthorizationRequestUtil {
 	
 	public static AuthorizationRequest resolveAuthorizationRequest(HttpServletRequest servletRequest)  {
         try {
-            return AuthorizationRequest.parse(ServletUtils.createHTTPRequest(servletRequest));
+            return AuthorizationRequest.parse(FixedServletUtils.createHTTPRequest(servletRequest));
         } catch (Exception e) {
             // ignore
         }

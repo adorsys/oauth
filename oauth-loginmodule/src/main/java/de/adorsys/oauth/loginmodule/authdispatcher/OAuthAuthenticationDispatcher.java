@@ -5,34 +5,21 @@ package de.adorsys.oauth.loginmodule.authdispatcher;
 
 import java.io.IOException;
 import java.security.Principal;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.management.ObjectName;
-import javax.security.jacc.PolicyContext;
-import javax.security.jacc.PolicyContextException;
-import javax.security.jacc.PolicyContextHandler;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.catalina.Container;
 import org.apache.catalina.Valve;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
 import org.apache.catalina.valves.ValveBase;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.nimbusds.oauth2.sdk.AuthorizationRequest;
-import com.nimbusds.oauth2.sdk.GrantType;
-import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.TokenRequest;
-import com.nimbusds.oauth2.sdk.http.ServletUtils;
-
-import de.adorsys.oauth.loginmodule.clientid.AuthorizationRequestUtil;
+import de.adorsys.oauth.loginmodule.authdispatcher.matchers.BasicAuthAuthenticatorMatcher;
+import de.adorsys.oauth.loginmodule.authdispatcher.matchers.ClientIdBasedAuthenticatorMatcher;
+import de.adorsys.oauth.loginmodule.authdispatcher.matchers.FormAuthAuthenticatorMatcher;
 
 /**
  * @author sso
@@ -40,71 +27,53 @@ import de.adorsys.oauth.loginmodule.clientid.AuthorizationRequestUtil;
  */
 public class OAuthAuthenticationDispatcher extends ValveBase {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(OAuthAuthenticationDispatcher.class);
-	
-	private interface AuthenticatorMatcher {
-		public boolean match(HttpServletRequest request);
-	}
-	
-	private Map<AuthenticatorMatcher, ValveBase> mapper = new HashMap<>(); 
+	private List<AuthenticatorMatcher> mapperList = new ArrayList<AuthenticatorMatcher>();
 	
 	public OAuthAuthenticationDispatcher() throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-		mapper.put(new AuthenticatorMatcher() {
-
-			@Override
-			public boolean match(HttpServletRequest request) {
-				AuthorizationRequest authRequest = AuthorizationRequestUtil.resolveAuthorizationRequest(request);
-				return authRequest != null || request.getParameter("formlogin") != null;
-			}
-			
-		}, (ValveBase)OAuthAuthenticationDispatcher.class.getClassLoader().loadClass("de.adorsys.oauth.loginmodule.authdispatcher.StatelessFormAuthenticator").newInstance());
-		mapper.put(new AuthenticatorMatcher() {
-
-			@Override
-			public boolean match(HttpServletRequest request) {
-				try {
-					TokenRequest tokenRequest = TokenRequest.parse(ServletUtils.createHTTPRequest(request));
-					return tokenRequest.getAuthorizationGrant().getType() == GrantType.PASSWORD;
-				} catch (ParseException e) {
-					return false;
-				} catch (IOException e) {
-					return false;
-				}
-			}
-			
-		}, (ValveBase)OAuthAuthenticationDispatcher.class.getClassLoader().loadClass("org.apache.catalina.authenticator.BasicAuthenticator").newInstance());
+		mapperList.add(new ClientIdBasedAuthenticatorMatcher());
+		mapperList.add(new FormAuthAuthenticatorMatcher());
+		mapperList.add(new BasicAuthAuthenticatorMatcher());
 	}
 	
 	@Override
 	public void setNext(Valve valve) {
 		super.setNext(valve);
-		Set<Entry<AuthenticatorMatcher,ValveBase>> entrySet = mapper.entrySet();
-		for (Entry<AuthenticatorMatcher, ValveBase> entry : entrySet) {
-			entry.getValue().setNext(valve);
+		for (AuthenticatorMatcher authenticatorMatcher : mapperList) {
+			List<ValveBase> valves = authenticatorMatcher.valves();
+			for (ValveBase valveBase : valves) {
+				valveBase.setNext(valve);
+			}
 		}
 	}
 	@Override
 	public void setContainer(Container container) {
 		super.setContainer(container);
-		Set<Entry<AuthenticatorMatcher,ValveBase>> entrySet = mapper.entrySet();
-		for (Entry<AuthenticatorMatcher, ValveBase> entry : entrySet) {
-			entry.getValue().setContainer(container);
+		for (AuthenticatorMatcher authenticatorMatcher : mapperList) {
+			List<ValveBase> valves = authenticatorMatcher.valves();
+			for (ValveBase valveBase : valves) {
+				valveBase.setContainer(container);
+			}
 		}
 	}
 	@Override
 	public void setController(ObjectName controller) {
 		super.setContainer(container);
-		Set<Entry<AuthenticatorMatcher,ValveBase>> entrySet = mapper.entrySet();
-		for (Entry<AuthenticatorMatcher, ValveBase> entry : entrySet) {
-			entry.getValue().setController(controller);
+		for (AuthenticatorMatcher authenticatorMatcher : mapperList) {
+			List<ValveBase> valves = authenticatorMatcher.valves();
+			for (ValveBase valveBase : valves) {
+				valveBase.setController(controller);
+			}
 		}
 	}
+	
 	@Override
 	public void setObjectName(ObjectName oname) {
 		super.setContainer(container);
-		Set<Entry<AuthenticatorMatcher,ValveBase>> entrySet = mapper.entrySet();
-		for (Entry<AuthenticatorMatcher, ValveBase> entry : entrySet) {
-			entry.getValue().setObjectName(oname);
+		for (AuthenticatorMatcher authenticatorMatcher : mapperList) {
+			List<ValveBase> valves = authenticatorMatcher.valves();
+			for (ValveBase valveBase : valves) {
+				valveBase.setObjectName(oname);
+			}
 		}
 	}
 
@@ -120,16 +89,13 @@ public class OAuthAuthenticationDispatcher extends ValveBase {
 
 	        try {
 	        	HttpContext.init(request, response);
-				
-				Set<Entry<AuthenticatorMatcher,ValveBase>> entrySet = mapper.entrySet();
-				for (Entry<AuthenticatorMatcher, ValveBase> entry : entrySet) {
-					if (entry.getKey().match(request)) {
-						LOG.debug("session exists b: {}", request.getSessionInternal(false) != null);
-						entry.getValue().invoke(request, response);
-						LOG.debug("session exists a: {}", request.getSessionInternal(false) != null);
-						return;
-					}
-				}
+	    		for (AuthenticatorMatcher authenticatorMatcher : mapperList) {
+	    			ValveBase valveBase = authenticatorMatcher.match(request);
+	    			if(valveBase!=null){
+	    				valveBase.invoke(request, response);
+	    				break;
+	    			}
+	    		}
 	        } finally {
 	        	HttpContext.release();
 	        }
