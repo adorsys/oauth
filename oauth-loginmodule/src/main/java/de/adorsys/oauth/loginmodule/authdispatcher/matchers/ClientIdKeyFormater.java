@@ -7,9 +7,9 @@ package de.adorsys.oauth.loginmodule.authdispatcher.matchers;
  *
  */
 public class ClientIdKeyFormater {
-	private static final String AUTHENTICATOR_PREFIX = "authenticator_";
+	private static final String AUTHENTICATOR_SUFFIX = "_AUTH";
 
 	public String format(String clientId){
-		return AUTHENTICATOR_PREFIX + clientId.replace('.', '_');
+		return clientId.replace('.', '_') + AUTHENTICATOR_SUFFIX;
 	}
 }

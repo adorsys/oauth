@@ -40,7 +40,6 @@
     <module>oauth-saml-bridge</module>
     <module>oauth-test</module>
     <module>oauth-login-theme</module>
-    <module>oauth-server-samlauth</module>
   </modules>
 
   <dependencyManagement>
@@ -125,6 +124,11 @@
         <artifactId>opensaml-saml-impl</artifactId>
         <version>${version.opensaml}</version>
       </dependency>
+		<dependency>
+			<groupId>org.opensaml</groupId>
+			<artifactId>opensaml-xmlsec-api</artifactId>
+        	<version>${version.opensaml}</version>
+		</dependency>
 	  <dependency>
 		<groupId>org.opensaml</groupId>
 		<artifactId>xmltooling</artifactId>

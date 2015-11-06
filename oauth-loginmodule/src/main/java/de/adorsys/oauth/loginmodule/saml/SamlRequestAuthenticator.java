@@ -1,10 +1,8 @@
-package de.adorsys.oauth.server.samlauth;
+package de.adorsys.oauth.loginmodule.saml;
 
 import java.io.IOException;
 import java.security.KeyStore;
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import javax.annotation.PostConstruct;
@@ -17,28 +15,18 @@ import org.apache.catalina.authenticator.AuthenticatorBase;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.deploy.LoginConfig;
 import org.apache.commons.lang.StringUtils;
-import org.jboss.security.SecurityConstants;
-import org.jboss.security.SimpleGroup;
 import org.joda.time.DateTime;
-import org.opensaml.core.xml.XMLObject;
 import org.opensaml.core.xml.io.MarshallingException;
-import org.opensaml.core.xml.schema.XSString;
 import org.opensaml.messaging.context.MessageContext;
-import org.opensaml.messaging.decoder.MessageDecodingException;
 import org.opensaml.messaging.encoder.MessageEncodingException;
 import org.opensaml.saml.common.SAMLObject;
 import org.opensaml.saml.common.SAMLVersion;
 import org.opensaml.saml.common.messaging.SAMLMessageSecuritySupport;
 import org.opensaml.saml.common.messaging.context.SAMLPeerEntityContext;
-import org.opensaml.saml.saml2.binding.decoding.impl.HTTPPostDecoder;
 import org.opensaml.saml.saml2.binding.encoding.impl.HTTPPostEncoder;
-import org.opensaml.saml.saml2.core.Assertion;
-import org.opensaml.saml.saml2.core.Attribute;
-import org.opensaml.saml.saml2.core.AttributeStatement;
 import org.opensaml.saml.saml2.core.AuthnRequest;
 import org.opensaml.saml.saml2.core.Issuer;
 import org.opensaml.saml.saml2.core.NameIDPolicy;
-import org.opensaml.saml.saml2.core.Response;
 import org.opensaml.saml.saml2.core.impl.AuthnRequestBuilder;
 import org.opensaml.saml.saml2.core.impl.IssuerBuilder;
 import org.opensaml.saml.saml2.core.impl.NameIDPolicyBuilder;
@@ -50,20 +38,18 @@ import org.opensaml.xmlsec.signature.support.SignatureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SamlAuthenticator extends AuthenticatorBase {
+public class SamlRequestAuthenticator extends AuthenticatorBase {
 	public static final String SAML_KEY_STORE_FILE_NAME = "SAML_KEY_STORE_FILE_NAME";
 	public static final String SAML_KEY_STORE_TYPE = "SAML_KEY_STORE_TYPE";
 	public static final String SAML_KEY_STORE_PASSWORD = "SAML_KEY_STORE_PASSWORD";
 	public static final String SAML_KEY_SIGN_KEY_ALIAS = "SAML_KEY_SIGN_KEY_ALIAS";
 	public static final String SAML_KEY_SIGN_KEY_PASSWORD = "SAML_KEY_SIGN_KEY_PASSWORD";
 	public static final String SAML_IDP_URL = "SAML_IDP_URL";
-	public static final String SAML_ROLE_ATTRIBUTE_NAME="SAML_ROLE_ATTRIBUTE_NAME";
 
-    private static final Logger LOG = LoggerFactory.getLogger(SamlAuthenticator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SamlRequestAuthenticator.class);
 	
 	private String idpUrl;
-	private KeyStoreX509CredentialAdapter credential;
-	private String roleAttributeName;
+	protected KeyStoreX509CredentialAdapter credential;
 	
 	private SAMLPeerEntityContext entityContext;
 	@PostConstruct
@@ -78,7 +64,6 @@ public class SamlAuthenticator extends AuthenticatorBase {
 			credential = new KeyStoreX509CredentialAdapter(keyStore, signKeyAlias, signKeyPassword);
 		}
 		idpUrl = getEnvThrowException(SAML_IDP_URL);
-		roleAttributeName = getEnv(SAML_ROLE_ATTRIBUTE_NAME,"Role");
 	}
 
 	@Override
@@ -90,27 +75,15 @@ public class SamlAuthenticator extends AuthenticatorBase {
 			return true;
 		}
 
-		// Is this the action request from the client? We expect a get request.
-		if ("GET".equals(request.getMethod())){
-			redirectSamlRequest(request, response);
-		} if ("POST".equals(request.getMethod())) {
-			// Yes -- Validate the response fron the idp server and
-			// to the error page if they are not correct
-            Principal userInfo = checkSamlRespone(request);
-            if (userInfo != null) {
-            	register(request, response, principal, "SAML", userInfo.getName(), null);
-            	return true;
-            }
-		}
+		redirectSamlRequest(request, response);
 
-        redirectSamlRequest(request, response);
         return false;
 	}
 
 	/**
 	 * redirectSamlRequest
 	 */
-	private void redirectSamlRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
+	protected void redirectSamlRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
         String consumerServiceURL = request.getRequestURL().toString();
         if (request.getQueryString() != null) {
@@ -167,64 +140,7 @@ public class SamlAuthenticator extends AuthenticatorBase {
 			throw new IOException(e);
 		}
     }
-	
-    /**
-     * checkSamlRespone
-     */
-    private Principal checkSamlRespone(HttpServletRequest request) throws IOException {
-        String samlResponse = request.getParameter("SAMLResponse");
-        if (samlResponse == null) {
-            return null;
-        }
 
-        HTTPPostDecoder decoder = new HTTPPostDecoder();
-        decoder.setHttpServletRequest(request);
-        try {
-			decoder.initialize();
-			decoder.decode();
-		} catch (ComponentInitializationException | MessageDecodingException e) {
-			throw new IOException(e);
-		}
-        Response response = (Response) decoder.getMessageContext().getMessage();
-
-//        Signature signature = response.getSignature();
-//        SignatureValidator.validate(signature, credential);
-        
-        List<String> groups = new ArrayList<String>();
-        groups.add("oauth"); // default for oauth
-
-        String name = null;
-        for (Assertion assertion : response.getAssertions()) {
-            if (assertion.getSubject() != null) {
-                name = assertion.getSubject().getNameID().getValue();
-            }
-            for (AttributeStatement statement : assertion.getAttributeStatements()) {
-                for (Attribute attribute : statement.getAttributes()) {
-                    if (!roleAttributeName.equals(attribute.getName())) {
-                        continue;
-                    }
-                    for (XMLObject xmlObject : attribute.getAttributeValues()) {
-                        if (xmlObject instanceof XSString) {
-                            XSString xsString = (XSString) xmlObject;
-                            groups.add(xsString.getValue());
-                        }
-
-                    }
-                }
-            }
-        }
-        
-        SimpleGroup callerPrincipalGroup = new SimpleGroup(name);        
-        SimpleGroup rolesGroup = new SimpleGroup(SecurityConstants.ROLES_IDENTIFIER);
-        callerPrincipalGroup.addMember(rolesGroup);
-        for (String string : groups) {
-        	SimpleGroup role = new SimpleGroup(string);
-        	rolesGroup.addMember(role);
-		}
-        
-        return callerPrincipalGroup;
-    }
-	
 	private KeyStore loadKeyStore(String keyStorFile, String storeType, char[] keyStorePassword) {
 		try {
 			if(StringUtils.isBlank(storeType))storeType=KeyStore.getDefaultType();

@@ -19,8 +19,8 @@ import de.adorsys.oauth.loginmodule.authdispatcher.AuthenticatorMatcher;
 import de.adorsys.oauth.loginmodule.clientid.AuthorizationRequestUtil;
 
 public class ClientIdBasedAuthenticatorMatcher implements AuthenticatorMatcher {
-	private static final String AUTHENTICATOR_CLIENTID_FORMATED_KEYS = "authenticator_clientIds";
-	private static final String AUTHENTICATOR_CLIENTID_FORMATER = "authenticator_clientId_formater";
+	private static final String AUTH_CLIENTID_AUTHENTICATORS = "AUTH_CLIENTID_AUTHENTICATORS";
+	private static final String AUTH_CLIENTID_FORMATER = "AUTH_CLIENTID_FORMATER";
 	private static final Logger LOG = LoggerFactory.getLogger(BasicAuthAuthenticatorMatcher.class);
 	Map<String, ValveBase> authenticator = new HashMap<String, ValveBase>();
 	private ClientIdKeyFormater keyFormater;
@@ -53,10 +53,11 @@ public class ClientIdBasedAuthenticatorMatcher implements AuthenticatorMatcher {
 	}
 	
 	private void setupClientIdKeyFormater(){
-		String formaterClassName = getEnv(AUTHENTICATOR_CLIENTID_FORMATER);
+		String formaterClassName = getEnv(AUTH_CLIENTID_FORMATER);
 		if(StringUtils.isNotBlank(formaterClassName)){
 			try {
-				Class<?> loadClass = ClientIdBasedAuthenticatorMatcher.class.getClassLoader().loadClass(formaterClassName);
+				Class<?> loadClass = Thread.currentThread().getContextClassLoader().loadClass(formaterClassName);
+//				Class<?> loadClass = ClientIdBasedAuthenticatorMatcher.class.getClassLoader().loadClass(formaterClassName);
 				keyFormater = (ClientIdKeyFormater) loadClass.newInstance();
 			} catch (Exception e) {
 				LOG.error("Can not instantiate specified clientId key formater : " + formaterClassName, e);
@@ -69,7 +70,7 @@ public class ClientIdBasedAuthenticatorMatcher implements AuthenticatorMatcher {
 	
 	@SuppressWarnings("unchecked")
 	private void setupClientIdAuthenticators(){
-		String clientIds = getEnv(AUTHENTICATOR_CLIENTID_FORMATED_KEYS);
+		String clientIds = getEnv(AUTH_CLIENTID_AUTHENTICATORS);
 		String[] split = StringUtils.split(clientIds, ',');
 		if(split==null)return;
 		for (String formatedClientIdStr : split) {

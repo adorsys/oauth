@@ -3,6 +3,7 @@ package de.adorsys.oauth.loginmodule.authdispatcher.matchers;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.catalina.valves.ValveBase;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +26,9 @@ public class BasicAuthAuthenticatorMatcher extends BaseAuthenticatorMatcher {
 
 	@Override
 	public ValveBase match(HttpServletRequest request) {
+		// Deals only with POST Requests. So no need to match others.
+		// @See com.nimbusds.oauth2.sdk.TokenRequest.parse(HTTPRequest)
+		if(!StringUtils.equalsIgnoreCase("POST", request.getMethod())) return null;
 		try {
 			TokenRequest tokenRequest = TokenRequest.parse(FixedServletUtils.createHTTPRequest(request));
 			if(tokenRequest.getAuthorizationGrant().getType() == GrantType.PASSWORD){
