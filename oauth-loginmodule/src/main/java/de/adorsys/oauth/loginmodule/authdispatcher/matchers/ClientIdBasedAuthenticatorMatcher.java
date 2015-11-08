@@ -17,15 +17,17 @@ import com.nimbusds.oauth2.sdk.id.ClientID;
 
 import de.adorsys.oauth.loginmodule.authdispatcher.AuthenticatorMatcher;
 import de.adorsys.oauth.loginmodule.clientid.AuthorizationRequestUtil;
+import de.adorsys.oauth.loginmodule.saml.SamlRequestAuthenticator;
 
 public class ClientIdBasedAuthenticatorMatcher implements AuthenticatorMatcher {
 	private static final String AUTH_CLIENTID_AUTHENTICATORS = "AUTH_CLIENTID_AUTHENTICATORS";
 	private static final String AUTH_CLIENTID_FORMATER = "AUTH_CLIENTID_FORMATER";
 	private static final Logger LOG = LoggerFactory.getLogger(BasicAuthAuthenticatorMatcher.class);
-	Map<String, ValveBase> authenticator = new HashMap<String, ValveBase>();
+	Map<String, ValveBase> configuredAuthenticators = new HashMap<String, ValveBase>();
 	private ClientIdKeyFormater keyFormater;
 	public ClientIdBasedAuthenticatorMatcher() {
 		super();
+		initAuthenticators();
 		setupClientIdKeyFormater();
 		setupClientIdAuthenticators();
 	}
@@ -37,11 +39,11 @@ public class ClientIdBasedAuthenticatorMatcher implements AuthenticatorMatcher {
 		ClientID clientID = authorizationRequest.getClientID();
 		String clientIdStr = clientID.getValue();
 		String formatedClientIdKey = keyFormater.format(clientIdStr);
-		return authenticator.get(formatedClientIdKey);
+		return configuredAuthenticators.get(formatedClientIdKey);
 	}
 	@Override
 	public List<ValveBase> valves() {
-		return new ArrayList<ValveBase>(authenticator.values());
+		return new ArrayList<ValveBase>(configuredAuthenticators.values());
 	}
 
 	private String getEnv(String propertyKey){
@@ -56,8 +58,8 @@ public class ClientIdBasedAuthenticatorMatcher implements AuthenticatorMatcher {
 		String formaterClassName = getEnv(AUTH_CLIENTID_FORMATER);
 		if(StringUtils.isNotBlank(formaterClassName)){
 			try {
-				Class<?> loadClass = Thread.currentThread().getContextClassLoader().loadClass(formaterClassName);
-//				Class<?> loadClass = ClientIdBasedAuthenticatorMatcher.class.getClassLoader().loadClass(formaterClassName);
+//				Class<?> loadClass = Thread.currentThread().getContextClassLoader().loadClass(formaterClassName);
+				Class<?> loadClass = ClientIdBasedAuthenticatorMatcher.class.getClassLoader().loadClass(formaterClassName);
 				keyFormater = (ClientIdKeyFormater) loadClass.newInstance();
 			} catch (Exception e) {
 				LOG.error("Can not instantiate specified clientId key formater : " + formaterClassName, e);
@@ -68,7 +70,6 @@ public class ClientIdBasedAuthenticatorMatcher implements AuthenticatorMatcher {
 		}		
 	}
 	
-	@SuppressWarnings("unchecked")
 	private void setupClientIdAuthenticators(){
 		String clientIds = getEnv(AUTH_CLIENTID_AUTHENTICATORS);
 		String[] split = StringUtils.split(clientIds, ',');
@@ -78,18 +79,17 @@ public class ClientIdBasedAuthenticatorMatcher implements AuthenticatorMatcher {
 			if(StringUtils.isBlank(clientIdAuthClass)){
 				throw new IllegalStateException("Missing property: " + clientIdAuthClass); 
 			}
-			Class<? extends ValveBase> klass;
-			try {
-				 klass = (Class<? extends ValveBase>) ClientIdBasedAuthenticatorMatcher.class.getClassLoader().loadClass(clientIdAuthClass);
-			} catch(Exception ex){
-				LOG.error("Can not load authenticator class", ex);
-				throw new IllegalStateException("Can not load class: " + clientIdAuthClass, ex); 
+			ValveBase valveBase = registeredAuthenticators.get(clientIdAuthClass);
+			if(valveBase==null){
+				LOG.error("Can not load authenticator class");
+				throw new IllegalStateException("Unknown valve: " + clientIdAuthClass); 
 			}
-			try {
-				authenticator.put(formatedClientIdStr, klass.newInstance());
-			} catch (Exception e) {
-				LOG.warn("Can not instantiate object.", e);
-			}
+			configuredAuthenticators.put(formatedClientIdStr, valveBase);
 		}
 	}
+	
+	private Map<String, ValveBase> registeredAuthenticators = new HashMap<String, ValveBase>();
+	private void initAuthenticators() {
+		registeredAuthenticators.put(SamlRequestAuthenticator.class.getName(), new SamlRequestAuthenticator());
+	}	
 }

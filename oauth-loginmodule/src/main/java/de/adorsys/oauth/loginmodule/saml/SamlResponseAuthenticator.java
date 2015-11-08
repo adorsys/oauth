@@ -1,30 +1,30 @@
 package de.adorsys.oauth.loginmodule.saml;
 
 import java.io.IOException;
-import java.security.KeyStore;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import net.shibboleth.utilities.java.support.component.ComponentInitializationException;
-
+import org.apache.catalina.Container;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.deploy.LoginConfig;
-import org.apache.commons.lang.StringUtils;
 import org.jboss.security.SecurityConstants;
 import org.jboss.security.SimpleGroup;
-import org.opensaml.core.xml.XMLObject;
-import org.opensaml.core.xml.schema.XSString;
-import org.opensaml.messaging.decoder.MessageDecodingException;
-import org.opensaml.saml.saml2.binding.decoding.impl.HTTPPostDecoder;
-import org.opensaml.saml.saml2.core.Assertion;
-import org.opensaml.saml.saml2.core.Attribute;
-import org.opensaml.saml.saml2.core.AttributeStatement;
-import org.opensaml.saml.saml2.core.Response;
+import org.opensaml.common.SAMLObject;
+import org.opensaml.common.binding.BasicSAMLMessageContext;
+import org.opensaml.saml2.binding.decoding.HTTPPostDecoder;
+import org.opensaml.saml2.core.Assertion;
+import org.opensaml.saml2.core.Attribute;
+import org.opensaml.saml2.core.AttributeStatement;
+import org.opensaml.saml2.core.Response;
+import org.opensaml.ws.message.decoder.MessageDecodingException;
+import org.opensaml.ws.transport.http.HttpServletRequestAdapter;
+import org.opensaml.xml.XMLObject;
+import org.opensaml.xml.schema.XSString;
+import org.opensaml.xml.security.SecurityException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,9 +34,9 @@ public class SamlResponseAuthenticator extends SamlRequestAuthenticator {
 
     private String roleAttributeName;
 	
-	@PostConstruct
-	public void postConstruct(){
-		super.postConstruct();
+	@Override
+	public void setContainer(Container container) {
+		super.setContainer(container);
 		roleAttributeName = getEnv(SAML_ROLE_ATTRIBUTE_NAME,"Role");
 	}
 
@@ -74,16 +74,16 @@ public class SamlResponseAuthenticator extends SamlRequestAuthenticator {
         if (samlResponse == null) {
             return null;
         }
-
+        BasicSAMLMessageContext<SAMLObject, SAMLObject, SAMLObject> messageContext = new BasicSAMLMessageContext<SAMLObject, SAMLObject, SAMLObject>(); 
+        messageContext.setInboundMessageTransport(new HttpServletRequestAdapter(request));
         HTTPPostDecoder decoder = new HTTPPostDecoder();
-        decoder.setHttpServletRequest(request);
         try {
-			decoder.initialize();
-			decoder.decode();
-		} catch (ComponentInitializationException | MessageDecodingException e) {
-			throw new IOException(e);
+			decoder.decode(messageContext);
+		} catch (MessageDecodingException | SecurityException e) {
+			throw new IllegalStateException(e);
 		}
-        Response response = (Response) decoder.getMessageContext().getMessage();
+
+        Response response = (Response) messageContext.getInboundSAMLMessage();
 
 //        Signature signature = response.getSignature();
 //        SignatureValidator.validate(signature, credential);
@@ -97,17 +97,18 @@ public class SamlResponseAuthenticator extends SamlRequestAuthenticator {
                 name = assertion.getSubject().getNameID().getValue();
             }
             for (AttributeStatement statement : assertion.getAttributeStatements()) {
-                for (Attribute attribute : statement.getAttributes()) {
+            	List<Attribute> attributes = statement.getAttributes();
+            	for (Attribute attribute : attributes) {
                     if (!roleAttributeName.equals(attribute.getName())) {
                         continue;
                     }
-                    for (XMLObject xmlObject : attribute.getAttributeValues()) {
-                        if (xmlObject instanceof XSString) {
-                            XSString xsString = (XSString) xmlObject;
-                            groups.add(xsString.getValue());
-                        }
-
-                    }
+                    List<XMLObject> attributeValues = attribute.getAttributeValues();
+                    for (XMLObject xmlObject : attributeValues) {
+                    	if (xmlObject instanceof XSString) {
+                    		XSString xsString = (XSString) xmlObject;
+                    		groups.add(xsString.getValue());
+                    	}
+					}
                 }
             }
         }
@@ -122,36 +123,5 @@ public class SamlResponseAuthenticator extends SamlRequestAuthenticator {
         
         return callerPrincipalGroup;
     }
-	
-	private KeyStore loadKeyStore(String keyStorFile, String storeType, char[] keyStorePassword) {
-		try {
-			if(StringUtils.isBlank(storeType))storeType=KeyStore.getDefaultType();
-			KeyStore ks = KeyStore.getInstance(storeType);
-		    java.io.FileInputStream fis = null;
-		    try {
-		        fis = new java.io.FileInputStream(keyStorFile);
-		        ks.load(fis, keyStorePassword);
-		    } finally {
-		        if (fis != null) {
-		            fis.close();
-		        }
-		    }		
-		    return ks;
-		} catch (Exception e){
-			throw new IllegalStateException(e);
-		}
-	}
-	
-	private String getEnvThrowException(String key){
-		String prop = System.getenv(key);
-		if(StringUtils.isBlank(prop)) throw new IllegalStateException("Missing property " + key);
-		return prop;
-	}
-	
-	private String getEnv(String key, String defaultProp) {
-		String prop = System.getenv(key);
-		if(StringUtils.isBlank(prop)) return defaultProp;
-		return prop;
-	}
 
 }

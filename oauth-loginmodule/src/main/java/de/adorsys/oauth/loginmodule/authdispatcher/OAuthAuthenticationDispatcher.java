@@ -100,6 +100,8 @@ public class OAuthAuthenticationDispatcher extends ValveBase {
 	        	HttpContext.release();
 	        }
 		}
-		getNext().invoke(request, response);
+		// only invoke next if response still open.
+		if(!response.isCommitted())
+			getNext().invoke(request, response);
 	}
 }

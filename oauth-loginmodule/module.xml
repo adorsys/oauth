@@ -1,58 +1,49 @@
 <module xmlns="urn:jboss:module:1.1" name="de.adorsys.oauth.oauth-loginmodule">
-  <resources>
-  
-  	<resource-root path="bcprov-jdk15on-1.51.jar"/>
-    <resource-root path="commons-codec-1.6.jar"/>
-    <resource-root path="commons-io-2.4.jar"/>
-	<resource-root path="commons-lang-2.4.jar"/>
-	<resource-root path="commons-lang3-3.3.2.jar"/>
-    <resource-root path="commons-logging-1.1.3.jar"/>
-    <resource-root path="cryptacular-1.0.jar"/>
-    <resource-root path="guava-18.0.jar"/>
-    <resource-root path="httpclient-4.3.3.jar"/>
-    <resource-root path="httpcore-4.3.3.jar"/>
-    <resource-root path="java-support-7.1.1.jar"/>
-    <resource-root path="jcip-annotations-1.0.jar"/>
-    <resource-root path="joda-time-2.7.jar"/>
-    <resource-root path="json-20150729.jar"/>
-    <resource-root path="json-smart-1.3.1.jar"/>
-    <resource-root path="jsr305-3.0.0.jar"/>
-    <resource-root path="lang-tag-1.4.jar"/>
-    <resource-root path="nimbus-jose-jwt-3.10.jar"/>
-    <resource-root path="oauth-loginmodule.jar"/>
-    <resource-root path="oauth2-oidc-sdk-4.14.2.jar"/>
-    <resource-root path="opensaml-core-3.1.1.jar"/>
-    <resource-root path="opensaml-messaging-api-3.1.1.jar"/>
-    <resource-root path="opensaml-profile-api-3.1.1.jar"/>
-    <resource-root path="opensaml-saml-api-3.1.1.jar"/>
-    <resource-root path="opensaml-saml-impl-3.1.1.jar"/>
-    <resource-root path="opensaml-security-api-3.1.1.jar"/>
-    <resource-root path="opensaml-security-impl-3.1.1.jar"/>
-    <resource-root path="opensaml-soap-api-3.1.1.jar"/>
-    <resource-root path="opensaml-soap-impl-3.1.1.jar"/>
-    <resource-root path="opensaml-storage-api-3.1.1.jar"/>
-    <resource-root path="opensaml-xmlsec-api-3.1.1.jar"/>
-    <resource-root path="opensaml-xmlsec-impl-3.1.1.jar"/>
-    <resource-root path="stax-api-1.0-2.jar"/>
-    <resource-root path="stax2-api-3.1.4.jar"/>
-    <resource-root path="velocity-1.7.jar"/>
-    <resource-root path="woodstox-core-asl-4.4.1.jar"/>
-    <resource-root path="xmlsec-2.0.3.jar"/>
-  </resources>
+	<resources>
+		<resource-root path="bcprov-jdk15on-1.52.jar" />
+		<resource-root path="commons-codec-1.6.jar" />
+		<resource-root path="commons-collections-3.2.1.jar"/>
+		<resource-root path="commons-httpclient-3.1.jar"/>
+		<resource-root path="commons-io-2.4.jar" />
+		<resource-root path="commons-lang-2.6.jar"/>
+		<resource-root path="commons-lang3-3.3.2.jar" />
+		<resource-root path="commons-logging-1.1.3.jar" />
+		<resource-root path="esapi-2.0.1.jar"/>
+		<resource-root path="httpclient-4.3.3.jar" />
+		<resource-root path="httpcore-4.3.3.jar" />
+		<resource-root path="jcip-annotations-1.0.jar" />
+		<resource-root path="joda-time-1.6.2.jar"/>
+		<resource-root path="json-20150729.jar" />
+		<resource-root path="json-smart-1.3.1.jar" />
+		<resource-root path="lang-tag-1.4.jar" />
+		<resource-root path="nimbus-jose-jwt-3.10.jar" />
+		<resource-root path="not-yet-commons-ssl-0.3.9.jar"/>
+		<resource-root path="oauth-loginmodule.jar" />
+		<resource-root path="oauth2-oidc-sdk-4.14.2.jar" />
+		<resource-root path="opensaml-2.5.3.jar"/>
+		<resource-root path="openws-1.4.4.jar"/>
+		<resource-root path="serializer-2.7.1.jar"/>
+		<resource-root path="velocity-1.5.jar"/>
+		<resource-root path="wss4j-1.6.17.jar"/>
+		<resource-root path="xalan-2.7.1.jar"/>
+		<resource-root path="xercesImpl-2.10.0.jar"/>
+		<resource-root path="xml-apis-1.4.01.jar"/>
+		<resource-root path="xml-resolver-1.2.jar"/>
+		<resource-root path="xmlsec-1.5.7.jar"/>
+		<resource-root path="xmltooling-1.3.4.jar"/>
+	</resources>
 
-  <dependencies>
-  	<module name="org.apache.commons.collections"></module>
-  
-    <module name="javax.api"/>
-    <module name="javax.enterprise.api"/>
-    <module name="javax.inject.api"/>
-    <module name="javax.mail.api"/>
-    <module name="javax.servlet.api"/>
-    <module name="javax.security.jacc.api"/>
-    <module name="org.slf4j" />
-    <module name="org.jboss.as.server" />
-    <module name="org.jboss.as.web" />
-    <module name="org.jboss.metadata" />
-    <module name="org.picketbox" />
-  </dependencies>
+	<dependencies>
+		<module name="javax.api" />
+		<module name="javax.enterprise.api" />
+		<module name="javax.inject.api" />
+		<module name="javax.mail.api" />
+		<module name="javax.servlet.api" />
+		<module name="javax.security.jacc.api" />
+		<module name="org.slf4j" />
+		<module name="org.jboss.as.server" />
+		<module name="org.jboss.as.web" />
+		<module name="org.jboss.metadata" />
+		<module name="org.picketbox" />
+	</dependencies>
 </module>

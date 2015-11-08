@@ -41,13 +41,28 @@
 		</dependency>
 		<dependency>
 			<groupId>org.opensaml</groupId>
-			<artifactId>opensaml-saml-impl</artifactId>
+			<artifactId>opensaml</artifactId>
+			<version>2.5.3</version>
 		</dependency>
 		<dependency>
 			<groupId>org.opensaml</groupId>
-			<artifactId>opensaml-xmlsec-api</artifactId>
+			<artifactId>openws</artifactId>
+			<version>1.4.4</version>
 		</dependency>
-		
+		<dependency>
+			<groupId>org.opensaml</groupId>
+			<artifactId>xmltooling</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.santuario</groupId>
+			<artifactId>xmlsec</artifactId>
+			<version>1.5.7</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.ws.security</groupId>
+			<artifactId>wss4j</artifactId>
+			<version>1.6.17</version>
+		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
@@ -67,7 +82,7 @@
 			<artifactId>mail</artifactId>
 			<scope>provided</scope>
 		</dependency>
-		
+
 	</dependencies>
 
 	<build>
