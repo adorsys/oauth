@@ -91,7 +91,8 @@ public class HTTPAuthenticationLoginModule implements LoginModule {
 		}
 
 		String username = nameCallback.getName();
-		String password = new String(passwordCallback.getPassword());
+		char[] passwordChars = passwordCallback.getPassword();
+		String password = passwordChars==null?null:new String(passwordChars);
 
 		LOG.info("login {}", username);
 

@@ -20,6 +20,7 @@ import org.apache.catalina.valves.ValveBase;
 import de.adorsys.oauth.loginmodule.authdispatcher.matchers.BasicAuthAuthenticatorMatcher;
 import de.adorsys.oauth.loginmodule.authdispatcher.matchers.ClientIdBasedAuthenticatorMatcher;
 import de.adorsys.oauth.loginmodule.authdispatcher.matchers.FormAuthAuthenticatorMatcher;
+import de.adorsys.oauth.loginmodule.authdispatcher.matchers.SamlResponseAuthenticatorMatcher;
 
 /**
  * @author sso
@@ -31,6 +32,7 @@ public class OAuthAuthenticationDispatcher extends ValveBase {
 	
 	public OAuthAuthenticationDispatcher() throws InstantiationException, IllegalAccessException, ClassNotFoundException {
 		mapperList.add(new ClientIdBasedAuthenticatorMatcher());
+		mapperList.add(new SamlResponseAuthenticatorMatcher());
 		mapperList.add(new FormAuthAuthenticatorMatcher());
 		mapperList.add(new BasicAuthAuthenticatorMatcher());
 	}
@@ -83,6 +85,7 @@ public class OAuthAuthenticationDispatcher extends ValveBase {
 	@Override
 	public void invoke(final Request request, final Response response) throws IOException, ServletException {
 		Principal principal = request.getPrincipal();
+		boolean invoked = false;
 		if (principal == null) {
 			// force catalina to parse parameters and content now, otherwise sometimes the content is lost ...
 	        request.getParameterNames();
@@ -93,6 +96,7 @@ public class OAuthAuthenticationDispatcher extends ValveBase {
 	    			ValveBase valveBase = authenticatorMatcher.match(request);
 	    			if(valveBase!=null){
 	    				valveBase.invoke(request, response);
+	    				invoked = true;
 	    				break;
 	    			}
 	    		}
@@ -100,8 +104,9 @@ public class OAuthAuthenticationDispatcher extends ValveBase {
 	        	HttpContext.release();
 	        }
 		}
+		// Called by the invoked valve.
 		// only invoke next if response still open.
-		if(!response.isCommitted())
+		if(!invoked)// only call if no match.
 			getNext().invoke(request, response);
 	}
 }

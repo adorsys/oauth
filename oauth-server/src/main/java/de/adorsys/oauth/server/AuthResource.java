@@ -1,6 +1,10 @@
 package de.adorsys.oauth.server;
 
 import java.net.URI;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -62,7 +66,6 @@ public class AuthResource {
 
         LOG.info("token lifetime {}", tokenLifetime);
     }
-
 
     @POST
     @Consumes("application/x-www-form-urlencoded")
@@ -129,21 +132,47 @@ public class AuthResource {
      * resolveAuthorizationRequest
      */
     private AuthorizationRequest resolveAuthorizationRequest() throws ParseException {
-        try {
-            return AuthorizationRequest.parse(FixedServletUtils.createHTTPRequest(servletRequest));
-        } catch (Exception e) {
-            // ignore
-        }
-        // sometimes during some redirections or idp chaining we get an POST with query string
-        String query = servletRequest.getQueryString();
-        if (query != null) {
-            return AuthorizationRequest.parse(query);
-        }
+    		
+    	String CLIENT_ID_STR = "client_id";
+    	if(isNotBlank(servletRequest.getParameter(CLIENT_ID_STR))){
+			Map<String, String> params = toSingleParamMap(servletRequest);
+			return AuthorizationRequest.parse(params );
+    	}
+    	
+    	if((contains(servletRequest.getQueryString(), CLIENT_ID_STR))){
+    		return AuthorizationRequest.parse(servletRequest.getQueryString());
+    	}
 
+    	// if we are dealing with a returning SAMLREsponse we might consider parsing 
+    	// the relayState
+    	if(servletRequest.getParameter("SAMLResponse")!=null && servletRequest.getParameter("RelayState")!=null){
+    		try {
+    			String serviceUrl = servletRequest.getParameter("RelayState");
+    			URL url = new URL(serviceUrl);
+    			if(contains(url.getQuery(), CLIENT_ID_STR)){
+    				return AuthorizationRequest.parse(url.getQuery());
+    			}
+    		} catch (Exception ex){
+    			// Noop
+    		}
+    	}
+        
         throw  new ParseException(String.format("unable to resolve AuthorizationRequest from %s", servletRequest.getRequestURI()));
     }
 
-    private UserInfo createUserInfo(AuthorizationRequest request) {
+    private boolean contains(String queryString, String searchStr) {
+    	if(queryString==null) return false;
+		return queryString.contains(searchStr);
+	}
+
+
+	private boolean isNotBlank(String parameter) {
+		if(parameter==null) return false;
+		return parameter.trim().length()>0;
+	}
+
+
+	private UserInfo createUserInfo(AuthorizationRequest request) {
         UserInfo userInfo = userInfoFactory.createUserInfo(servletRequest);
 
         if (request == null) {
@@ -158,4 +187,15 @@ public class AuthResource {
 
         return userInfo;
     }
+	
+	public Map<String, String> toSingleParamMap(HttpServletRequest servletRequest){
+		Enumeration<String> parameterNames = servletRequest.getParameterNames();
+		Map<String, String> params = new HashMap<String, String>();		
+		while (parameterNames.hasMoreElements()) {
+			String param = (String) parameterNames.nextElement();
+			String value = servletRequest.getParameter(param);
+			params.put(param, value);
+		}
+		return params;
+	}
 }

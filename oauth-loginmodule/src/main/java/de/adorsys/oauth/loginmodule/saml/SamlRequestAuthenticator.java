@@ -1,13 +1,16 @@
 package de.adorsys.oauth.loginmodule.saml;
 
 import java.io.IOException;
+import java.net.URL;
 import java.security.Key;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.UnrecoverableKeyException;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
@@ -17,25 +20,39 @@ import org.apache.catalina.Container;
 import org.apache.catalina.authenticator.AuthenticatorBase;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.deploy.LoginConfig;
+import org.apache.commons.httpclient.NameValuePair;
+import org.apache.commons.httpclient.util.ParameterParser;
+import org.apache.commons.httpclient.util.URIUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.RuntimeConstants;
+import org.jboss.security.SimpleGroup;
 import org.joda.time.DateTime;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.common.SAMLObject;
 import org.opensaml.common.SAMLVersion;
 import org.opensaml.common.binding.BasicSAMLMessageContext;
+import org.opensaml.saml2.binding.decoding.HTTPPostDecoder;
 import org.opensaml.saml2.binding.encoding.HTTPPostEncoder;
+import org.opensaml.saml2.core.Assertion;
+import org.opensaml.saml2.core.Attribute;
+import org.opensaml.saml2.core.AttributeStatement;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.Issuer;
 import org.opensaml.saml2.core.NameIDPolicy;
+import org.opensaml.saml2.core.Response;
 import org.opensaml.saml2.core.impl.AuthnRequestBuilder;
 import org.opensaml.saml2.core.impl.IssuerBuilder;
 import org.opensaml.saml2.core.impl.NameIDPolicyBuilder;
 import org.opensaml.saml2.metadata.Endpoint;
 import org.opensaml.saml2.metadata.impl.AuthzServiceBuilder;
+import org.opensaml.ws.message.decoder.MessageDecodingException;
 import org.opensaml.ws.message.encoder.MessageEncodingException;
+import org.opensaml.ws.transport.http.HttpServletRequestAdapter;
 import org.opensaml.xml.ConfigurationException;
+import org.opensaml.xml.XMLObject;
+import org.opensaml.xml.schema.XSString;
+import org.opensaml.xml.security.SecurityException;
 import org.opensaml.xml.security.x509.KeyStoreX509CredentialAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,12 +64,18 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 	public static final String SAML_KEY_SIGN_KEY_ALIAS = "SAML_KEY_SIGN_KEY_ALIAS";
 	public static final String SAML_KEY_SIGN_KEY_PASSWORD = "SAML_KEY_SIGN_KEY_PASSWORD";
 	public static final String SAML_IDP_URL = "SAML_IDP_URL";
-    private static final Logger LOG = LoggerFactory.getLogger(SamlResponseAuthenticator.class);
+	public static final String SAML_ROLE_ATTRIBUTE_NAMES="SAML_ROLE_ATTRIBUTE_NAMES";
 
+	private static final Logger LOG = LoggerFactory.getLogger(SamlResponseAuthenticator.class);
+
+	// URL des SAML IDP
 	private String idpUrl;
 	protected KeyStoreX509CredentialAdapter credential;
 
+    private String roleAttributeNames;
+	
 	boolean initialized = false;
+
 	@Override
 	public void setContainer(Container container) {
 		super.setContainer(container);
@@ -98,6 +121,8 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 					signKeyAlias, signKeyPassword);
 		}
 		idpUrl = getEnvThrowException(SAML_IDP_URL);
+
+		roleAttributeNames = getEnv(SAML_ROLE_ATTRIBUTE_NAMES,"Role,Roles,Membership,Memberships");
 	}
 
 	@Override
@@ -109,7 +134,18 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 			return true;
 		}
 
-		redirectSamlRequest(request, response);
+        String samlResponse = request.getParameter("SAMLResponse");
+        if (samlResponse != null) {
+            Principal userInfo = checkSamlRespone(request);
+            if (userInfo != null) {
+            	register(request, response, principal, "SAML", userInfo.getName(), null);
+            	return true;
+            } else {
+            	return false;
+            }
+        }
+		
+		redirectSamlRequest(request, response, null);
 
 		return false;
 	}
@@ -118,11 +154,13 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 	 * redirectSamlRequest
 	 */
 	protected void redirectSamlRequest(HttpServletRequest request,
-			HttpServletResponse response) throws IOException {
+			HttpServletResponse response, Response samlResponse) throws IOException {
 
-		String consumerServiceURL = request.getRequestURL().toString();
+		String customerRequestServiceURL = request.getRequestURL().toString();
+		URL url = new URL(customerRequestServiceURL);
+		String consumerServiceURL = url.getProtocol() + "://" + url.getHost() + (url.getPort()>0?":"+url.getPort():"") + url.getPath();
 		if (request.getQueryString() != null) {
-			consumerServiceURL = String.format("%s?%s", consumerServiceURL,
+			customerRequestServiceURL = String.format("%s?%s", customerRequestServiceURL,
 					request.getQueryString());
 		}
 
@@ -153,12 +191,11 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 		Endpoint endpoint = new AuthzServiceBuilder().buildObject();
 		endpoint.setLocation(idpUrl);
 		messageContext.setPeerEntityEndpoint(endpoint);
+		messageContext.setRelayState(customerRequestServiceURL);
 
 		
 		boolean secure = StringUtils.containsIgnoreCase(consumerServiceURL, "https://");
 		HttpServletResponseAdapter responseAdapter = new HttpServletResponseAdapter(response, secure);
-//		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-//		OutputStreamOutTransportAdapter transportAdapter = new OutputStreamOutTransportAdapter(bos);
 		messageContext.setOutboundMessageTransport(responseAdapter);
 
 		HTTPPostEncoder postEncoder = new HTTPPostEncoder(velocityEngine,"templates/saml2-post-binding.vm");
@@ -169,6 +206,93 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 		}
 	}
 
+    /**
+     * checkSamlRespone
+     */
+    @SuppressWarnings({ "deprecation", "rawtypes", "unchecked" })
+	protected Principal checkSamlRespone(Request request) throws IOException {
+        String samlResponse = request.getParameter("SAMLResponse");
+        if (samlResponse == null) {
+            return null;
+        }
+        BasicSAMLMessageContext<SAMLObject, SAMLObject, SAMLObject> messageContext = new BasicSAMLMessageContext<SAMLObject, SAMLObject, SAMLObject>(); 
+        messageContext.setInboundMessageTransport(new HttpServletRequestAdapter(request));
+        HTTPPostDecoder decoder = new HTTPPostDecoder();
+        try {
+			decoder.decode(messageContext);
+		} catch (MessageDecodingException | SecurityException e) {
+			throw new IllegalStateException(e);
+		}
+
+        Response response = (Response) messageContext.getInboundSAMLMessage();
+
+//        Signature signature = response.getSignature();
+//        SignatureValidator.validate(signature, credential);
+        String relayState = request.getParameter("RelayState");;
+        if(StringUtils.isBlank(relayState))relayState = messageContext.getRelayState();
+        if(StringUtils.isBlank(relayState)){
+        	throw new IllegalStateException("Missing redicret information.");
+        }
+        
+        // Check is relay state is only the query string part of the request or a full 
+        // URL.
+        String query = null;
+        if(StringUtils.startsWithIgnoreCase(relayState, "http")){
+            URL originalUrl = new URL(relayState);
+            query = originalUrl.getQuery();
+        } else {
+            query = relayState;
+        }
+        if (StringUtils.isBlank(query)){
+        	throw new IllegalStateException("Missing redicret information.");
+        }
+        
+        query = URIUtil.decode(query);
+        ParameterParser parameterParser = new ParameterParser();
+        List parse = parameterParser.parse(query, '&');
+        for (Object object : parse) {
+        	NameValuePair nv = (NameValuePair) object;
+        	String parameter = request.getParameter(nv.getName());
+        	if(StringUtils.isBlank(parameter)){
+        		String[] values = new String[]{nv.getValue()};
+        		request.addParameter(nv.getName(), values);
+        	}
+		}
+        // set back the query string so oauth module can process the request.
+        request.setQueryString(query);
+        
+        List<String> groups = new ArrayList<String>();
+
+        String principalName = null;
+        for (Assertion assertion : response.getAssertions()) {
+            if (assertion.getSubject() != null && StringUtils.isBlank(principalName)) {
+                principalName = assertion.getSubject().getNameID().getValue();
+            }
+            for (AttributeStatement statement : assertion.getAttributeStatements()) {
+            	List<Attribute> attributes = statement.getAttributes();
+            	for (Attribute attribute : attributes) {
+                    if (!StringUtils.containsIgnoreCase(roleAttributeNames,attribute.getName())) {
+                        continue;
+                    }
+                    List<XMLObject> attributeValues = attribute.getAttributeValues();
+                    for (XMLObject xmlObject : attributeValues) {
+                    	if (xmlObject instanceof XSString) {
+                    		XSString xsString = (XSString) xmlObject;
+                    		groups.add(xsString.getValue());
+                    	}
+					}
+                }
+            }
+        }
+        
+        SimpleGroup callerPrincipalGroup = new SimpleGroup(principalName);        
+        for (String string : groups) {
+        	SimpleGroup role = new SimpleGroup(string);
+        	callerPrincipalGroup.addMember(role);
+		}
+        
+        return callerPrincipalGroup;
+    }	
 	private KeyStore loadKeyStore(String keyStorFile, String storeType,
 			char[] keyStorePassword) {
 		try {

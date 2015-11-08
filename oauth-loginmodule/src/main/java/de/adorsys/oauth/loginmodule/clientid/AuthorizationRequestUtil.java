@@ -7,7 +7,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 
-import de.adorsys.oauth.loginmodule.authdispatcher.FixedServletUtils;
+import de.adorsys.oauth.loginmodule.util.FixedServletUtils;
 
 /**
  * @author Sandro Sonntag

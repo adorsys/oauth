@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 
-import de.adorsys.oauth.loginmodule.authdispatcher.FixedServletUtils;
+import de.adorsys.oauth.loginmodule.util.FixedServletUtils;
 
 public class BasicAuthAuthenticatorMatcher extends BaseAuthenticatorMatcher {
 	private static final Logger LOG = LoggerFactory.getLogger(BasicAuthAuthenticatorMatcher.class);

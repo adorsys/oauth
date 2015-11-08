@@ -1,4 +1,4 @@
-package de.adorsys.oauth.loginmodule.authdispatcher;
+package de.adorsys.oauth.loginmodule.util;
 
 import java.io.BufferedReader;
 import java.io.IOException;
