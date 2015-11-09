@@ -49,7 +49,9 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 	private URI authEndpoint;
 	private URI tokenEndpoint;
 	private URI userInfoEndpoint;
-	private boolean supportHttpSession;
+
+    // http session off by default
+	private boolean supportHttpSession = false;
 
     // authcode is default enabled
 	private boolean supportAuthCode = true;
@@ -75,13 +77,15 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 
 		LOG.debug("Request " + requestURI);
 
-		// 1. check for token or auth_grant
+		// 1. check for token
 		AccessToken accessToken = resolveAccessToken(request, requestURI);
-		if (accessToken == null) {
+		if (accessToken == null && ! supportHttpSession) { // no guest login in session env
 			principal = context.getRealm().authenticate("guest", "NONE");
 			request.setUserPrincipal(principal);
 			return true;
-		} else if (authenticate(accessToken, request, response)) {
+		}
+
+        if (accessToken != null && authenticate(accessToken, request, response)) {
 			return true;
 		}
 		
