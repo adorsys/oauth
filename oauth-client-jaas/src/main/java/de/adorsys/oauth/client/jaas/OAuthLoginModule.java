@@ -52,10 +52,16 @@ public class OAuthLoginModule implements LoginModule {
 
         String name = nameCallback.getName();
         String bearer = new String(password.getPassword());
-
-        LOG.info("login {}:{}", name, bearer);
-
         try {
+
+        	HttpServletRequest request = (HttpServletRequest) PolicyContext.getContext(HttpServletRequest.class.getName());
+        	UserInfo userInfo = (UserInfo) request.getAttribute(UserInfo.class.getName());
+        	if (userInfo == null) {
+        		//no userinfo - no oauth login
+        		return false;
+        	}
+        	
+        	LOG.info("login {}:{}", name, bearer);
 
             SimplePrincipal principal = new SimplePrincipal(name);
             subject.getPrincipals().add(principal);
@@ -68,15 +74,16 @@ public class OAuthLoginModule implements LoginModule {
             subject.getPrincipals().add(bearerGroup);
             bearerGroup.addMember(new SimplePrincipal(bearer));
 
-            HttpServletRequest request = (HttpServletRequest) PolicyContext.getContext(HttpServletRequest.class.getName());
-            UserInfo userInfo = (UserInfo) request.getAttribute(UserInfo.class.getName());
 
             if (userInfo != null && userInfo.getSubject().getValue().equals(name)) {
-                LOG.info("UserInfo: {} {}", userInfo.getSubject().getValue(), userInfo.getClaim("groups"));
+                Object claims = userInfo.getClaim("groups");
+				LOG.info("UserInfo: {} {}", userInfo.getSubject().getValue(), claims);
                 Group rolesGroup = new SimpleGroup("Roles");
                 subject.getPrincipals().add(rolesGroup);
-                for (String group : (List<String>) userInfo.getClaim("groups")) {
-                    rolesGroup.addMember(new SimplePrincipal(group));
+                if (claims != null) {
+	                for (String group : (List<String>) claims) {
+	                    rolesGroup.addMember(new SimplePrincipal(group));
+	                }
                 }
 
                 if (sharedState != null) {

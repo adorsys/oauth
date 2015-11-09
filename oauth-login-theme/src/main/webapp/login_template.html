@@ -1,0 +1,18 @@
+<div id="mainContainer" class="container">
+    <div id="content" autoscroll="false">
+        <div id="login">
+            <div id="loginImage"></div>
+            <div translate ng-if="loginError">loginerror</div>
+
+            <form action="{{loginUrl}}" method=post>
+                <p><strong>Please Enter Your User Name: </strong>
+                    <input type="text" name="j_username" size="25">
+                <p><p><strong>Please Enter Your Password: </strong>
+                <input type="password" size="15" name="j_password">
+                <p><p>
+                <input type="submit" value="Submit">
+                <input type="reset" value="Reset">
+            </form>
+        </div>
+    </div>
+</div>

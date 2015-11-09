@@ -15,6 +15,7 @@
     <version.oauth2-oidc-sdk>4.14.2</version.oauth2-oidc-sdk>
     <version.httpcomponents>4.3.3</version.httpcomponents>
     <version.opensaml>3.1.1</version.opensaml>
+    <version.xmltooling>1.3.4</version.xmltooling>
     <version.mongodb>3.0.2</version.mongodb>
     <version.arquillian>1.1.4.Final</version.arquillian>
     <version.arquillian.container>7.1.3.Final</version.arquillian.container>
@@ -32,11 +33,14 @@
     <module>oauth-server</module>
     <module>oauth-tokenstore-jpa</module>
     <module>oauth-tokenstore-mongodb</module>
+    <module>oauth-loginmodule</module>
     <module>oauth-server-sample</module>
     <module>oauth-client-jaas</module>
     <module>oauth-client-jaspic</module>
     <module>oauth-saml-bridge</module>
     <module>oauth-test</module>
+    <module>oauth-login-theme</module>
+    <module>oauth-test-saml-idp</module>
   </modules>
 
   <dependencyManagement>
@@ -107,6 +111,11 @@
         <version>${version.httpcomponents}</version>
       </dependency>
       <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpcore</artifactId>
+        <version>${version.httpcomponents}</version>
+      </dependency>
+      <dependency>
         <groupId>org.mongodb</groupId>
         <artifactId>mongodb-driver</artifactId>
         <version>${version.mongodb}</version>
@@ -116,6 +125,16 @@
         <artifactId>opensaml-saml-impl</artifactId>
         <version>${version.opensaml}</version>
       </dependency>
+		<dependency>
+			<groupId>org.opensaml</groupId>
+			<artifactId>opensaml-xmlsec-api</artifactId>
+        	<version>${version.opensaml}</version>
+		</dependency>
+	  <dependency>
+		<groupId>org.opensaml</groupId>
+		<artifactId>xmltooling</artifactId>
+		<version>${version.xmltooling}</version>
+	  </dependency>      
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>

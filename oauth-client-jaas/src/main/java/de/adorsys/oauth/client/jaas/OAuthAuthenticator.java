@@ -1,10 +1,19 @@
 package de.adorsys.oauth.client.jaas;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
+import java.security.Principal;
+
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.authenticator.AuthenticatorBase;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.deploy.LoginConfig;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpEntity;
 import org.apache.http.client.cache.HttpCacheContext;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -28,13 +37,6 @@ import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.security.Principal;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * OAuthAuthenticator
@@ -75,10 +77,14 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 
 		// 1. check for token or auth_grant
 		AccessToken accessToken = resolveAccessToken(request, requestURI);
-		if (accessToken != null && authenticate(accessToken, request, response)) {
+		if (accessToken == null) {
+			principal = context.getRealm().authenticate("guest", "NONE");
+			request.setUserPrincipal(principal);
+			return true;
+		} else if (authenticate(accessToken, request, response)) {
 			return true;
 		}
-
+		
 		if (!supportAuthCode) {
 			response.setStatus(401);
 			return false;
@@ -174,43 +180,53 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 	private boolean authenticate(AccessToken accessToken, Request request, HttpServletResponse response) {
 
 		LOG.debug("authenticate accessToken {}", accessToken);
-
-		UserInfo userInfo = null;
+		
 		try {
-
-			URI uri = new URI(String.format("%s?id=%s", userInfoEndpoint.toString(), accessToken.getValue()));
-			HttpGet httpGet = new HttpGet(uri);
-
-			httpGet.setHeader("Authorization", new BearerAccessToken(accessToken.getValue()).toAuthorizationHeader());
-
-			HttpCacheContext context = HttpCacheContext.create();
-			CloseableHttpResponse userInfoResponse = cachingHttpClient.execute(httpGet, context);
-			LOG.debug("read userinfo {} {}", accessToken.getValue(), context.getCacheResponseStatus());
-
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			userInfoResponse.getEntity().writeTo(baos);
-
-			userInfo = UserInfo.parse(baos.toString());
-		} catch (Exception e) {
-			LOG.error("ups", e);
+			HttpContext.init(request, response);
+			UserInfo userInfo = null;
+			try {
+	
+				URI uri = new URI(String.format("%s?id=%s", userInfoEndpoint.toString(), accessToken.getValue()));
+				HttpGet httpGet = new HttpGet(uri);
+	
+				httpGet.setHeader("Authorization", new BearerAccessToken(accessToken.getValue()).toAuthorizationHeader());
+	
+				HttpCacheContext context = HttpCacheContext.create();
+				CloseableHttpResponse userInfoResponse = cachingHttpClient.execute(httpGet, context);
+				LOG.debug("read userinfo {} {}", accessToken.getValue(), context.getCacheResponseStatus());
+	
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				HttpEntity entity = userInfoResponse.getEntity();
+				if(entity==null){
+					LOG.info("no userInfo available for {}", accessToken.getValue());
+					return false;
+				}
+				entity.writeTo(baos);
+				String userInfoString = baos.toString();
+				userInfo = UserInfo.parse(userInfoString);
+			} catch (Exception e) {
+				LOG.error("ups", e);
+			}
+	
+			if (userInfo == null) {
+				LOG.info("no userInfo available for {}", accessToken.getValue());
+				return false;
+			}
+	
+	        // use the request to provide userinfo in loginmodules
+	        request.setAttribute(UserInfo.class.getName(), userInfo);
+	
+	        Principal principal = context.getRealm().authenticate(userInfo.getSubject().getValue(), accessToken.getValue());
+	        if (supportHttpSession) {
+	            request.getSessionInternal(); // force to create http-session
+	        }
+	        request.setUserPrincipal(principal);
+	        response.setHeader("Authorization", accessToken.toAuthorizationHeader());
+	        register(request, response, principal, "OAUTH", userInfo.getSubject().getValue(), accessToken.getValue());
+	        return true;
+		} finally {
+			HttpContext.release();
 		}
-
-		if (userInfo == null) {
-			LOG.info("no userInfo available for {}", accessToken.getValue());
-			return false;
-		}
-
-        // use the request to provide userinfo in loginmodules
-        request.setAttribute(UserInfo.class.getName(), userInfo);
-
-        Principal principal = context.getRealm().authenticate(userInfo.getSubject().getValue(), accessToken.getValue());
-        if (supportHttpSession) {
-            request.getSessionInternal(); // force to create http-session
-        }
-        request.setUserPrincipal(principal);
-        response.setHeader("Authorization", accessToken.toAuthorizationHeader());
-        register(request, response, principal, "OAUTH", userInfo.getSubject().getValue(), accessToken.getValue());
-        return true;
 	}
 
 	@Override

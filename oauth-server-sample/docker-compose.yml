@@ -1,0 +1,22 @@
+jboss:
+    image: docker.adorsys.de/adorsys/eap-full
+    ports:
+        - "8080:8080"
+        - "80:80"
+        - "8787:8787"
+        - "9990:9990"
+        - "443:443"
+    expose:
+        - "8787"
+        - "80" 
+        - "8080"
+        - "443"
+    volumes:
+        - ../oauth-http-loginmodule/target/oauth-http-loginmodule/de/adorsys/oauth/oauth-http-loginmodule:/opt/jboss/modules/system/layers/base/de/adorsys/oauth/oauth-http-loginmodule
+        - ./target/oauth-server-sample.war:/opt/jboss/standalone/deployments/oauth-server-sample.war
+        - ../oauth-login-theme/target/oauth-login-theme.war:/opt/jboss/standalone/deployments/oauth-login-theme.war
+        - /opt/jboss/standalone/configuration
+        - ./standalone.xml:/opt/jboss/standalone/configuration/standalone.xml
+        - ./app-groups.properties:/opt/jboss/standalone/configuration/app-groups.properties
+        - ./app-users.properties:/opt/jboss/standalone/configuration/app-users.properties
+    command: bash -c "ls -la /opt/jboss/modules/system/layers/base/de/adorsys/oauth/oauth-http-loginmodule && /opt/jboss/bin/standalone.sh -Djboss.http.port=80 -Djboss.https.port=443 -b=0.0.0.0 -bmanagement=0.0.0.0 --debug"
