@@ -6,9 +6,7 @@ package de.adorsys.oauth.loginmodule.authdispatcher;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.management.ObjectName;
 import javax.servlet.ServletException;
@@ -37,7 +35,7 @@ public class OAuthAuthenticationDispatcher extends ValveBase {
 	EnvUtils envUtils = new EnvUtils();
 	
 	public OAuthAuthenticationDispatcher() {
-		buildMatcherMap();
+		// Matcher list can be defined as system properties in standalone.xml
 		String authenticators = envUtils.getEnv(AUTH_AUTHENTICATORS, null);
 		if(StringUtils.isNotBlank(authenticators)){
 			mapperList = toMatcherList(authenticators);
@@ -115,29 +113,26 @@ public class OAuthAuthenticationDispatcher extends ValveBase {
 		// only invoke next if response still open.
 		getNext().invoke(request, response);
 	}
-	
-	private Map<String, AuthenticatorMatcher> allMatchers = new HashMap<String, AuthenticatorMatcher>();
-	private void buildMatcherMap(){
-		allMatchers.put(ClientIdBasedAuthenticatorMatcher.class.getName(), new ClientIdBasedAuthenticatorMatcher());
-		allMatchers.put(SamlResponseAuthenticatorMatcher.class.getName(), new SamlResponseAuthenticatorMatcher());
-		allMatchers.put(FormAuthAuthenticatorMatcher.class.getName(), new FormAuthAuthenticatorMatcher());
-		allMatchers.put(BasicAuthAuthenticatorMatcher.class.getName(), new BasicAuthAuthenticatorMatcher());
-	}
-	
+
 	private List<AuthenticatorMatcher> defaultMatcherList(){
 		List<AuthenticatorMatcher> list = new ArrayList<AuthenticatorMatcher>();
-		list.add(allMatchers.get(ClientIdBasedAuthenticatorMatcher.class.getName()));
-		list.add(allMatchers.get(SamlResponseAuthenticatorMatcher.class.getName()));
-		list.add(allMatchers.get(FormAuthAuthenticatorMatcher.class.getName()));
-		list.add(allMatchers.get(BasicAuthAuthenticatorMatcher.class.getName()));
+		list.add(new FormAuthAuthenticatorMatcher());
+		list.add(new BasicAuthAuthenticatorMatcher());
 		return list;
 	}
+	
 	private List<AuthenticatorMatcher> toMatcherList(String matchers){
 		String[] matcherList = StringUtils.split(matchers,',');
 		List<AuthenticatorMatcher> list = new ArrayList<AuthenticatorMatcher>();
 		for (String matcher : matcherList) {
-			if(allMatchers.containsKey(matcher))
-			list.add(allMatchers.get(matcher));
+			if(ClientIdBasedAuthenticatorMatcher.class.getSimpleName().equals(matcher))
+				list.add(new ClientIdBasedAuthenticatorMatcher());
+			if(SamlResponseAuthenticatorMatcher.class.getSimpleName().equals(matcher))
+				list.add(new SamlResponseAuthenticatorMatcher());
+			if(FormAuthAuthenticatorMatcher.class.getSimpleName().equals(matcher))
+				list.add(new FormAuthAuthenticatorMatcher());
+			if(BasicAuthAuthenticatorMatcher.class.getSimpleName().equals(matcher))
+				list.add(new BasicAuthAuthenticatorMatcher());
 		}
 		return list;
 	}

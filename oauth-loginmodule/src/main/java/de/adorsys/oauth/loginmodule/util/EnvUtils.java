@@ -14,12 +14,16 @@ public class EnvUtils {
 	public String getEnvThrowException(String key) {
 		String prop = System.getenv(key);
 		if (StringUtils.isBlank(prop))
+			prop = System.getProperty(key);
+		if (StringUtils.isBlank(prop))
 			throw new IllegalStateException("Missing property " + key);
 		return prop;
 	}
 
 	public String getEnv(String key, String defaultProp) {
 		String prop = System.getenv(key);
+		if (StringUtils.isBlank(prop))
+			prop = System.getProperty(key);
 		if (StringUtils.isBlank(prop))
 			return defaultProp;
 		return prop;
