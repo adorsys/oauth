@@ -57,6 +57,8 @@ import org.opensaml.xml.security.x509.KeyStoreX509CredentialAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.adorsys.oauth.loginmodule.util.EnvUtils;
+
 public class SamlRequestAuthenticator extends AuthenticatorBase {
 	public static final String SAML_KEY_STORE_FILE_NAME = "SAML_KEY_STORE_FILE_NAME";
 	public static final String SAML_KEY_STORE_TYPE = "SAML_KEY_STORE_TYPE";
@@ -75,6 +77,8 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
     private String roleAttributeNames;
 	
 	boolean initialized = false;
+	
+	private EnvUtils envUtils = new EnvUtils();
 
 	@Override
 	public void setContainer(Container container) {
@@ -91,10 +95,10 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 		
 		initVelocityEngine();
 		
-		String keyStoreFile = getEnv(SAML_KEY_STORE_FILE_NAME, null);
+		String keyStoreFile = envUtils.getEnv(SAML_KEY_STORE_FILE_NAME, null);
 		if (StringUtils.isNotBlank(keyStoreFile)) {
-			String storeType = getEnvThrowException(SAML_KEY_STORE_TYPE);
-			char[] keyStorePassword = getEnvThrowException(
+			String storeType = envUtils.getEnvThrowException(SAML_KEY_STORE_TYPE);
+			char[] keyStorePassword = envUtils.getEnvThrowException(
 					SAML_KEY_STORE_PASSWORD).toCharArray();
 			KeyStore keyStore = loadKeyStore(keyStoreFile, storeType,
 					keyStorePassword);
@@ -107,8 +111,8 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 			} catch (Exception ex){
 				throw new IllegalStateException(ex);
 			}
-			String signKeyAlias = getEnvThrowException(SAML_KEY_SIGN_KEY_ALIAS);
-			char[] signKeyPassword = getEnvThrowException(
+			String signKeyAlias = envUtils.getEnvThrowException(SAML_KEY_SIGN_KEY_ALIAS);
+			char[] signKeyPassword = envUtils.getEnvThrowException(
 					SAML_KEY_SIGN_KEY_PASSWORD).toCharArray();
 			try {
 				Key key = keyStore.getKey(signKeyAlias, signKeyPassword);
@@ -120,9 +124,9 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 			credential = new KeyStoreX509CredentialAdapter(keyStore,
 					signKeyAlias, signKeyPassword);
 		}
-		idpUrl = getEnvThrowException(SAML_IDP_URL);
+		idpUrl = envUtils.getEnvThrowException(SAML_IDP_URL);
 
-		roleAttributeNames = getEnv(SAML_ROLE_ATTRIBUTE_NAMES,"Role,Roles,Membership,Memberships");
+		roleAttributeNames = envUtils.getEnv(SAML_ROLE_ATTRIBUTE_NAMES,"Role,Roles,Membership,Memberships");
 	}
 
 	@Override
@@ -314,20 +318,6 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 		}
 	}
 
-	private String getEnvThrowException(String key) {
-		String prop = System.getenv(key);
-		if (StringUtils.isBlank(prop))
-			throw new IllegalStateException("Missing property " + key);
-		return prop;
-	}
-
-	protected String getEnv(String key, String defaultProp) {
-		String prop = System.getenv(key);
-		if (StringUtils.isBlank(prop))
-			return defaultProp;
-		return prop;
-	}
-	
 	private VelocityEngine velocityEngine;
 	private void initVelocityEngine(){
 		velocityEngine = new VelocityEngine();

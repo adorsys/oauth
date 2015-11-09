@@ -18,13 +18,24 @@ import com.nimbusds.oauth2.sdk.id.ClientID;
 import de.adorsys.oauth.loginmodule.authdispatcher.AuthenticatorMatcher;
 import de.adorsys.oauth.loginmodule.clientid.AuthorizationRequestUtil;
 import de.adorsys.oauth.loginmodule.saml.SamlRequestAuthenticator;
+import de.adorsys.oauth.loginmodule.util.EnvUtils;
 
+/**
+ * Registers authenticators to match request based on the client id.
+ * 
+ * @author francis pouatcha
+ *
+ */
 public class ClientIdBasedAuthenticatorMatcher implements AuthenticatorMatcher {
+	
 	private static final String AUTH_CLIENTID_AUTHENTICATORS = "AUTH_CLIENTID_AUTHENTICATORS";
 	private static final String AUTH_CLIENTID_FORMATER = "AUTH_CLIENTID_FORMATER";
 	private static final Logger LOG = LoggerFactory.getLogger(BasicAuthAuthenticatorMatcher.class);
 	Map<String, ValveBase> configuredAuthenticators = new HashMap<String, ValveBase>();
 	private ClientIdKeyFormater keyFormater;
+	
+	private EnvUtils envUtils = new EnvUtils();
+	
 	public ClientIdBasedAuthenticatorMatcher() {
 		super();
 		initAuthenticators();
@@ -46,19 +57,10 @@ public class ClientIdBasedAuthenticatorMatcher implements AuthenticatorMatcher {
 		return new ArrayList<ValveBase>(configuredAuthenticators.values());
 	}
 
-	private String getEnv(String propertyKey){
-		String property = System.getProperty(propertyKey);
-		if(StringUtils.isBlank(property)){
-			property = System.getenv(propertyKey);
-		}		
-		return property;
-	}
-	
 	private void setupClientIdKeyFormater(){
-		String formaterClassName = getEnv(AUTH_CLIENTID_FORMATER);
+		String formaterClassName = envUtils.getEnv(AUTH_CLIENTID_FORMATER, null);
 		if(StringUtils.isNotBlank(formaterClassName)){
 			try {
-//				Class<?> loadClass = Thread.currentThread().getContextClassLoader().loadClass(formaterClassName);
 				Class<?> loadClass = ClientIdBasedAuthenticatorMatcher.class.getClassLoader().loadClass(formaterClassName);
 				keyFormater = (ClientIdKeyFormater) loadClass.newInstance();
 			} catch (Exception e) {
@@ -71,11 +73,11 @@ public class ClientIdBasedAuthenticatorMatcher implements AuthenticatorMatcher {
 	}
 	
 	private void setupClientIdAuthenticators(){
-		String clientIds = getEnv(AUTH_CLIENTID_AUTHENTICATORS);
+		String clientIds = envUtils.getEnv(AUTH_CLIENTID_AUTHENTICATORS, null);
 		String[] split = StringUtils.split(clientIds, ',');
 		if(split==null)return;
 		for (String formatedClientIdStr : split) {
-			String clientIdAuthClass = getEnv(formatedClientIdStr);
+			String clientIdAuthClass = envUtils.getEnv(formatedClientIdStr, null);
 			if(StringUtils.isBlank(clientIdAuthClass)){
 				throw new IllegalStateException("Missing property: " + clientIdAuthClass); 
 			}

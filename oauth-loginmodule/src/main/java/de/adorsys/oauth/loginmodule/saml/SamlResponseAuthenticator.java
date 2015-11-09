@@ -52,6 +52,4 @@ public class SamlResponseAuthenticator extends SamlRequestAuthenticator {
         return false;
 	}
 	
-
-
 }
