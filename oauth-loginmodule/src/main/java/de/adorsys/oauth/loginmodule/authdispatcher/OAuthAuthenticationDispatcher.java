@@ -94,7 +94,6 @@ public class OAuthAuthenticationDispatcher extends ValveBase {
 	@Override
 	public void invoke(final Request request, final Response response) throws IOException, ServletException {
 		Principal principal = request.getPrincipal();
-		boolean invoked = false;
 		if (principal == null) {
 			// force catalina to parse parameters and content now, otherwise sometimes the content is lost ...
 	        request.getParameterNames();
@@ -105,8 +104,7 @@ public class OAuthAuthenticationDispatcher extends ValveBase {
 	    			ValveBase valveBase = authenticatorMatcher.match(request);
 	    			if(valveBase!=null){
 	    				valveBase.invoke(request, response);
-	    				invoked = true;
-	    				break;
+	    				return;
 	    			}
 	    		}
 	        } finally {
@@ -115,8 +113,7 @@ public class OAuthAuthenticationDispatcher extends ValveBase {
 		}
 		// Called by the invoked valve.
 		// only invoke next if response still open.
-		if(!invoked)// only call if no match.
-			getNext().invoke(request, response);
+		getNext().invoke(request, response);
 	}
 	
 	private Map<String, AuthenticatorMatcher> allMatchers = new HashMap<String, AuthenticatorMatcher>();

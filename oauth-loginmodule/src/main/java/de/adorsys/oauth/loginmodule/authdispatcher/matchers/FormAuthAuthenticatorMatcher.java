@@ -3,7 +3,6 @@ package de.adorsys.oauth.loginmodule.authdispatcher.matchers;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.catalina.valves.ValveBase;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +23,7 @@ public class FormAuthAuthenticatorMatcher extends BaseAuthenticatorMatcher {
 	@Override
 	public ValveBase match(HttpServletRequest request) {
 		// handle only get requests. So no need to parse.
-		if(!StringUtils.equalsIgnoreCase("GET", request.getMethod())) return null;
+//		if(!StringUtils.equalsIgnoreCase("GET", request.getMethod())) return null;
 		AuthorizationRequest authRequest = AuthorizationRequestUtil.resolveAuthorizationRequest(request);
 		if(authRequest != null && request.getParameter("formlogin") != null){
 			return valve;
