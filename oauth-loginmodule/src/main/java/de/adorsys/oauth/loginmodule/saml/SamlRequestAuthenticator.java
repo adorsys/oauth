@@ -10,8 +10,9 @@ import java.security.Principal;
 import java.security.UnrecoverableKeyException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,6 +33,7 @@ import org.opensaml.DefaultBootstrap;
 import org.opensaml.common.SAMLObject;
 import org.opensaml.common.SAMLVersion;
 import org.opensaml.common.binding.BasicSAMLMessageContext;
+import org.opensaml.common.impl.SecureRandomIdentifierGenerator;
 import org.opensaml.saml2.binding.decoding.HTTPPostDecoder;
 import org.opensaml.saml2.binding.encoding.HTTPPostEncoder;
 import org.opensaml.saml2.core.Assertion;
@@ -78,8 +80,10 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 	
 	boolean initialized = false;
 	
-	private EnvUtils envUtils = new EnvUtils();
+	protected EnvUtils envUtils = new EnvUtils();
+	SecureRandomIdentifierGenerator secureRandomIdentifierGenerator = null;
 
+	Map<String, String> idp2SpRoles = null;
 	@Override
 	public void setContainer(Container container) {
 		super.setContainer(container);
@@ -127,6 +131,14 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 		idpUrl = envUtils.getEnvThrowException(SAML_IDP_URL);
 
 		roleAttributeNames = envUtils.getEnv(SAML_ROLE_ATTRIBUTE_NAMES,"Role,Roles,Membership,Memberships");
+		
+		idp2SpRoles = mapRoles();
+		
+		try {
+			secureRandomIdentifierGenerator = new SecureRandomIdentifierGenerator();
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	@Override
@@ -172,7 +184,7 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 		authnRequest.setAssertionConsumerServiceURL(consumerServiceURL);
 		authnRequest.setDestination(idpUrl);
 		authnRequest.setForceAuthn(false);
-		authnRequest.setID(UUID.randomUUID().toString());
+		authnRequest.setID(secureRandomIdentifierGenerator.generateIdentifier());
 		authnRequest.setIsPassive(false);
 		authnRequest.setIssueInstant(new DateTime(System.currentTimeMillis()));
 		authnRequest
@@ -282,7 +294,9 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
                     for (XMLObject xmlObject : attributeValues) {
                     	if (xmlObject instanceof XSString) {
                     		XSString xsString = (XSString) xmlObject;
-                    		groups.add(xsString.getValue());
+                    		String idpRole = xsString.getValue();
+                    		String spRole = idp2SpRoles.get(idpRole); 
+                    		groups.add(spRole);
                     	}
 					}
                 }
@@ -333,4 +347,31 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 		}		
 	}
 
+	// SAML_IDP_ROLES
+	public static final String SAML_IDP_ROLES="saml_idp_roles";
+	public static final String SAML_IDP_ROLE_PREFIX="saml_idp_";
+
+	private Map<String, String> mapRoles(){
+		String role_keys = envUtils.getEnv(SAML_IDP_ROLES, null);
+		if(StringUtils.isBlank(role_keys)) return mapDefaults();
+		String[] split = StringUtils.split(role_keys);
+		Map<String, String> result = new HashMap<String, String>();
+		for (String role_key : split) {
+			String roles = envUtils.getEnvThrowException(SAML_IDP_ROLE_PREFIX+role_key);
+			String[] roleArray = StringUtils.split(roles);
+			if(roleArray!=null && roleArray.length>0){
+				for (String role : roleArray) {
+					result.put(role, role_key);
+				}
+			}
+		}
+		return result;
+	}
+
+	private Map<String, String> mapDefaults() {
+		Map<String, String> result = new HashMap<String, String>();
+		result.put("GA_DIKS_STU_CM_BENUTZERKONTEN", "diksadmin");
+		result.put("GA_DIKS_STU_NACHRICHTENDIALOG", "postboxadmin");
+		return result;
+	}
 }

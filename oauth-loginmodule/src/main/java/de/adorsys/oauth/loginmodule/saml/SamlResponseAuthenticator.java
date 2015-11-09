@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 public class SamlResponseAuthenticator extends SamlRequestAuthenticator {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SamlResponseAuthenticator.class);
-	
+
 	@Override
 	public void setContainer(Container container) {
 		super.setContainer(container);
@@ -50,6 +50,5 @@ public class SamlResponseAuthenticator extends SamlRequestAuthenticator {
 
 		response.sendError(HttpServletResponse.SC_FORBIDDEN);
         return false;
-	}
-	
+	}	
 }
