@@ -43,8 +43,10 @@ public class SamlResponseAuthenticator extends SamlRequestAuthenticator {
     			Realm realm = context.getRealm();
     			// Associate principal with subjects.
     			Principal authenticatedPrincipal = realm.authenticate(samlPrincipals.getName(), pwd);
-            	register(request, response, authenticatedPrincipal, "SAML", authenticatedPrincipal.getName(), null);
-            	return true;
+    			if(authenticatedPrincipal!=null) {
+    				register(request, response, authenticatedPrincipal, "SAML", authenticatedPrincipal.getName(), null);
+    				return true;
+            	}
             }
 		}
 

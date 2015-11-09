@@ -53,6 +53,7 @@ import org.opensaml.ws.message.encoder.MessageEncodingException;
 import org.opensaml.ws.transport.http.HttpServletRequestAdapter;
 import org.opensaml.xml.ConfigurationException;
 import org.opensaml.xml.XMLObject;
+import org.opensaml.xml.schema.XSAny;
 import org.opensaml.xml.schema.XSString;
 import org.opensaml.xml.security.SecurityException;
 import org.opensaml.xml.security.x509.KeyStoreX509CredentialAdapter;
@@ -174,10 +175,18 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 
 		String customerRequestServiceURL = request.getRequestURL().toString();
 		URL url = new URL(customerRequestServiceURL);
-		String consumerServiceURL = url.getProtocol() + "://" + url.getHost() + (url.getPort()>0?":"+url.getPort():"") + url.getPath();
+		String intranetServerUrl = System.getenv("diks_Intranet_Server_Url");
+		String consumerServiceURL = null;
+		if(StringUtils.isNotBlank(intranetServerUrl)){
+			consumerServiceURL = intranetServerUrl + url.getPath();
+		} else {
+			consumerServiceURL = url.getProtocol() + "://" + url.getHost() + (url.getPort()>0?":"+url.getPort():"") + url.getPath();
+		}
 		if (request.getQueryString() != null) {
-			customerRequestServiceURL = String.format("%s?%s", customerRequestServiceURL,
+			customerRequestServiceURL = String.format("%s?%s", consumerServiceURL,
 					request.getQueryString());
+		} else {
+			customerRequestServiceURL = consumerServiceURL;
 		}
 
 		AuthnRequest authnRequest = new AuthnRequestBuilder().buildObject();
@@ -233,7 +242,8 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
         }
         BasicSAMLMessageContext<SAMLObject, SAMLObject, SAMLObject> messageContext = new BasicSAMLMessageContext<SAMLObject, SAMLObject, SAMLObject>(); 
         messageContext.setInboundMessageTransport(new HttpServletRequestAdapter(request));
-        HTTPPostDecoder decoder = new HTTPPostDecoder();
+        HTTPPostDecoder decoder = new TempHTTPPostDecoder();
+
         try {
 			decoder.decode(messageContext);
 		} catch (MessageDecodingException | SecurityException e) {
@@ -284,23 +294,57 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
             if (assertion.getSubject() != null && StringUtils.isBlank(principalName)) {
                 principalName = assertion.getSubject().getNameID().getValue();
             }
+            LOG.info("Parsing attribute looking for : " + roleAttributeNames);
             for (AttributeStatement statement : assertion.getAttributeStatements()) {
             	List<Attribute> attributes = statement.getAttributes();
             	for (Attribute attribute : attributes) {
+            		LOG.info("Parsing attribute: " + attribute.getName());
                     if (!StringUtils.containsIgnoreCase(roleAttributeNames,attribute.getName())) {
                         continue;
                     }
+            		LOG.info("Attribute Found : " + attribute.getName());
                     List<XMLObject> attributeValues = attribute.getAttributeValues();
                     for (XMLObject xmlObject : attributeValues) {
+                		LOG.info("Attribute qname : " + xmlObject.getElementQName());
+                		LOG.info("Type: " + xmlObject.getClass().getName());
+                		String idpRole = null;
                     	if (xmlObject instanceof XSString) {
                     		XSString xsString = (XSString) xmlObject;
-                    		String idpRole = xsString.getValue();
-                    		String spRole = idp2SpRoles.get(idpRole); 
-                    		groups.add(spRole);
+                    		idpRole = xsString.getValue();
+                    		LOG.info("XSString: " + idpRole);
+                    	} else if(xmlObject instanceof XSAny){
+                    		XSAny xsAny = (XSAny) xmlObject;
+                    		idpRole = xsAny.getTextContent();
+                    		LOG.info("XSAny: " + idpRole);
+                    	} else {
+                    		if(xmlObject.hasChildren()){
+                    			List<XMLObject> orderedChildren = xmlObject.getOrderedChildren();
+                    			for (XMLObject xmlObject2 : orderedChildren) {
+									if(idpRole==null){
+										idpRole=xmlObject2.toString();
+			                    		LOG.info("XMLObject: " + idpRole);
+									} else {
+										idpRole+=","+xmlObject2.toString();
+			                    		LOG.info("XMLObjects: " + idpRole);
+									}
+								}
+                    		} else {
+                    			idpRole = xmlObject.toString();
+	                    		LOG.info("xmlObject.toString(): " + idpRole);
+                    		}
                     	}
+                		LOG.info("Attribute value : " + idpRole);
+                		if(StringUtils.isBlank(idpRole)) continue;
+                		String[] split = StringUtils.split(idpRole, ",");
+                		for (String roleIdx : split) {
+                			String spRole = idp2SpRoles.get(roleIdx);
+                			if(StringUtils.isNotBlank(spRole))
+                				groups.add(spRole);
+						}
 					}
                 }
             }
+    		LOG.info("User Attributes : " + groups);
         }
         
         SimpleGroup callerPrincipalGroup = new SimpleGroup(principalName);        

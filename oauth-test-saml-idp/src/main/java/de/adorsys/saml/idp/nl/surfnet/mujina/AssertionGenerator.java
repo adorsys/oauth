@@ -44,8 +44,8 @@ public class AssertionGenerator {
         // assertion.getAttributeStatements().add(attributeStatementGenerator.generateAttributeStatement(authToken.getAuthorities())); 
  
         final Map<String,String> attributes = new HashMap<String, String>(); 
-        attributes.put("urn:mace:dir:attribute-def:uid", userName); 
-        attributes.put("Roles", roles);
+        attributes.put("urn:mace:dir:attribute-def:uid", userName);
+        attributes.put("Membership", roles);
         assertion.getAttributeStatements().add(attributeStatementGenerator.generateAttributeStatement(attributes)); 
  
         assertion.setID(UUID.randomUUID().toString()); 

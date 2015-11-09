@@ -124,7 +124,7 @@ public class IdpServlet extends HttpServlet {
 		
 //        URL url = new URL(assertionConsumerServiceURL);
 //		String remoteIP = url.getProtocol()+"://"+url.getHost()+(url.getPort()>0?":"+url.getPort():"") + "/" + url.getPath(); 
-		org.opensaml.saml2.core.Response authnResponse = generateAuthnResponse(assertionConsumerServiceURL, "adreas.boetscher", "GA_DIKS_STU_CM_BENUTZERKONTEN",assertionConsumerServiceURL, 300, authnRequest.getID(), new DateTime());
+		org.opensaml.saml2.core.Response authnResponse = generateAuthnResponse(assertionConsumerServiceURL, "adreas.boetscher", "GA_DIKS_STU_CM_BENUTZERKONTEN,XXXY",assertionConsumerServiceURL, 300, authnRequest.getID(), new DateTime());
 
 		BasicSAMLMessageContext<SAMLObject, SAMLObject, SAMLObject> messageContext = new BasicSAMLMessageContext<SAMLObject, SAMLObject, SAMLObject>();
 		messageContext.setInboundMessage(authnRequest);
