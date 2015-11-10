@@ -398,7 +398,7 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 	private Map<String, String> mapRoles(){
 		String role_keys = envUtils.getEnv(SAML_IDP_ROLES, null);
 		if(StringUtils.isBlank(role_keys)) return mapDefaults();
-		String[] split = StringUtils.split(role_keys);
+		String[] split = StringUtils.split(role_keys, ",");
 		Map<String, String> result = new HashMap<String, String>();
 		for (String role_key : split) {
 			String roles = envUtils.getEnvThrowException(SAML_IDP_ROLE_PREFIX+role_key);
