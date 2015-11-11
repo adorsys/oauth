@@ -12,6 +12,7 @@ import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,12 +84,13 @@ public class OAuthClientIdLoginModule implements LoginModule {
         	
         }
         List<String>allowedUris = Arrays.asList(redirectionURIs.split(","));
-        if (allowedUris.contains(authorizationRequest.getRedirectionURI().toString())) {
-        	return true;
-        } else {
-        	LOG.warn("OAUTH ClientID {} requested a token but the redirect urls does not match. Actual redirectionurl {} is not defined in {}.", clientID, authorizationRequest.getRedirectionURI(), allowedUris);
-        	throw new LoginException("OAUTH ClientID {} requested a token but the redirect urls does not match. Actual redirectionurl {} is not defined in {}.");
-        }
+        for (String allowedUri : allowedUris) {
+        	String redirectUri = authorizationRequest.getRedirectionURI().toString();
+        	if(StringUtils.startsWithIgnoreCase(redirectUri, allowedUri)) return true;
+		}
+
+    	LOG.warn("OAUTH ClientID {} requested a token but the redirect urls does not match. Actual redirectionurl {} is not defined in {}.", clientID, authorizationRequest.getRedirectionURI(), allowedUris);
+    	throw new LoginException("OAUTH ClientID {} requested a token but the redirect urls does not match. Actual redirectionurl {} is not defined in {}.");
     }
     
     
