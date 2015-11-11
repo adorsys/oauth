@@ -51,11 +51,13 @@ import org.opensaml.saml2.metadata.impl.AuthzServiceBuilder;
 import org.opensaml.ws.message.decoder.MessageDecodingException;
 import org.opensaml.ws.message.encoder.MessageEncodingException;
 import org.opensaml.ws.transport.http.HttpServletRequestAdapter;
+import org.opensaml.ws.transport.http.HttpServletResponseAdapter;
 import org.opensaml.xml.ConfigurationException;
 import org.opensaml.xml.XMLObject;
 import org.opensaml.xml.schema.XSAny;
 import org.opensaml.xml.schema.XSString;
 import org.opensaml.xml.security.SecurityException;
+import org.opensaml.xml.security.credential.UsageType;
 import org.opensaml.xml.security.x509.KeyStoreX509CredentialAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,6 +98,11 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 			} catch (ConfigurationException e) {
 				throw new IllegalStateException(e);
 			}
+//			
+//			SecurityConfiguration secConfig = Configuration.getGlobalSecurityConfiguration();
+//	        NamedKeyInfoGeneratorManager kiMgr = secConfig.getKeyInfoGeneratorManager();
+//	        kiMgr.registerFactory(X509Credential.class.getName(), factory);
+	        
 		}
 		
 		initVelocityEngine();
@@ -128,6 +135,7 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 			}
 			credential = new KeyStoreX509CredentialAdapter(keyStore,
 					signKeyAlias, signKeyPassword);
+			credential.setUsageType(UsageType.SIGNING);
 		}
 		idpUrl = envUtils.getEnvThrowException(SAML_IDP_URL);
 
@@ -223,7 +231,7 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 		HttpServletResponseAdapter responseAdapter = new HttpServletResponseAdapter(response, secure);
 		messageContext.setOutboundMessageTransport(responseAdapter);
 
-		HTTPPostEncoder postEncoder = new HTTPPostEncoder(velocityEngine,"templates/saml2-post-binding.vm");
+		HTTPPostEncoder postEncoder = new DiksHttpPostEncoder(velocityEngine,"templates/saml2-post-binding.vm");
 		try {
 			postEncoder.encode(messageContext);
 		} catch (MessageEncodingException e) {
@@ -242,7 +250,7 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
         }
         BasicSAMLMessageContext<SAMLObject, SAMLObject, SAMLObject> messageContext = new BasicSAMLMessageContext<SAMLObject, SAMLObject, SAMLObject>(); 
         messageContext.setInboundMessageTransport(new HttpServletRequestAdapter(request));
-        HTTPPostDecoder decoder = new TempHTTPPostDecoder();
+        HTTPPostDecoder decoder = new DiksHTTPPostDecoder();
 
         try {
 			decoder.decode(messageContext);

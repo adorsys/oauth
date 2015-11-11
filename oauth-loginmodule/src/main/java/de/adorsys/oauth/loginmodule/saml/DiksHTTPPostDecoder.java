@@ -3,7 +3,7 @@ package de.adorsys.oauth.loginmodule.saml;
 import org.opensaml.saml2.binding.decoding.HTTPPostDecoder;
 import org.opensaml.ws.message.decoder.MessageDecodingException;
 
-public class TempHTTPPostDecoder extends HTTPPostDecoder {
+public class DiksHTTPPostDecoder extends HTTPPostDecoder {
 
 
 	@Override
@@ -14,8 +14,4 @@ public class TempHTTPPostDecoder extends HTTPPostDecoder {
 		// TODO Auto-generated method stub
 //		return super.compareEndpointURIs(messageDestination, receiverEndpoint);
 	}
-
-	
-
-
 }
