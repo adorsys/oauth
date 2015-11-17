@@ -12,6 +12,8 @@ import com.nimbusds.oauth2.sdk.TokenRequest;
 
 import de.adorsys.oauth.loginmodule.util.FixedServletUtils;
 
+import java.util.Collections;
+
 public class BasicAuthAuthenticatorMatcher extends BaseAuthenticatorMatcher {
 	private static final Logger LOG = LoggerFactory.getLogger(BasicAuthAuthenticatorMatcher.class);
 
@@ -26,18 +28,43 @@ public class BasicAuthAuthenticatorMatcher extends BaseAuthenticatorMatcher {
 
 	@Override
 	public ValveBase match(HttpServletRequest request) {
+        // Real basic auth header
+        if (isBasicAuthentication(request)) {
+            return valve;
+        }
+
 		// Deals only with POST Requests. So no need to match others.
 		// @See com.nimbusds.oauth2.sdk.TokenRequest.parse(HTTPRequest)
-		if(!StringUtils.equalsIgnoreCase("POST", request.getMethod())) return null;
-		try {
-			TokenRequest tokenRequest = TokenRequest.parse(FixedServletUtils.createHTTPRequest(request));
-			if(tokenRequest.getAuthorizationGrant().getType() == GrantType.PASSWORD){
-				return valve;
-			}
-			return null;
-		} catch (Exception e) {
-			LOG.warn("Can not load authenticator", e);
-			return null;
-		}
+		if(StringUtils.equalsIgnoreCase("POST", request.getMethod())) {
+            try {
+                TokenRequest tokenRequest = TokenRequest.parse(FixedServletUtils.createHTTPRequest(request));
+                if (tokenRequest.getAuthorizationGrant().getType() == GrantType.PASSWORD) {
+                    return valve;
+                }
+                return null;
+            } catch (Exception e) {
+                LOG.warn("Can not load authenticator", e);
+                return null;
+            }
+        }
+
+        return null;
 	}
+
+    private static boolean isBasicAuthentication(HttpServletRequest httpServletRequest) {
+        String authHeader = null;
+
+        for (String name : Collections.list(httpServletRequest.getHeaderNames())) {
+            if ("authorization".equalsIgnoreCase(name)) {
+                authHeader = httpServletRequest.getHeader(name);
+                break;
+            }
+        }
+
+        if (StringUtils.isNotEmpty(authHeader) && authHeader.substring(0,5).equalsIgnoreCase("Basic")) {
+            return true;
+        }
+
+        return false;
+    }
 }

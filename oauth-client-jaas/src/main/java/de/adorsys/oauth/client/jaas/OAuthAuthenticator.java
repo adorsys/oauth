@@ -8,6 +8,8 @@ import java.security.Principal;
 
 import javax.servlet.http.HttpServletResponse;
 
+import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
+import com.nimbusds.oauth2.sdk.auth.Secret;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.authenticator.AuthenticatorBase;
 import org.apache.catalina.connector.Request;
@@ -58,6 +60,7 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 
 	private CloseableHttpClient cachingHttpClient;
 	private ClientID clientId;
+    private Secret clientSecret;
 
 	@Override
 	protected boolean authenticate(Request request, HttpServletResponse response, LoginConfig loginConfig) throws IOException {
@@ -130,7 +133,13 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 	 */
 	private AccessTokenResponse  handleAuthorization(AuthorizationCode authorizationCode, URI redirect, HttpServletResponse response) {
 
-		TokenRequest tokenRequest = new TokenRequest(tokenEndpoint, clientId, new AuthorizationCodeGrant(authorizationCode, redirect));
+		TokenRequest tokenRequest = null;
+        if (clientSecret == null) {
+            tokenRequest = new TokenRequest(tokenEndpoint, clientId, new AuthorizationCodeGrant(authorizationCode, redirect));
+        } else {
+            ClientSecretBasic clientSecretBasic = new ClientSecretBasic(clientId, clientSecret);
+            tokenRequest = new TokenRequest(tokenEndpoint, clientSecretBasic, new AuthorizationCodeGrant(authorizationCode, redirect));
+        }
 
 		try {
             HTTPResponse tokenResponse = tokenRequest.toHTTPRequest().send();
@@ -285,4 +294,8 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 	public void setSupportAuthCode(boolean supportAuthCode) {
 		this.supportAuthCode = supportAuthCode;
 	}
+
+    public void setClientSecret(String clientSecret) {
+        this.clientSecret = new Secret(clientSecret);
+    }
 }

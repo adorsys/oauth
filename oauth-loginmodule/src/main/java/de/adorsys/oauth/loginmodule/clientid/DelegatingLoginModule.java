@@ -1,10 +1,14 @@
 package de.adorsys.oauth.loginmodule.clientid;
 
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.TokenRequest;
+import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 
 import de.adorsys.oauth.loginmodule.authdispatcher.HttpContext;
 
+import de.adorsys.oauth.loginmodule.util.FixedServletUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +20,7 @@ import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 import javax.servlet.http.HttpServletRequest;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -37,6 +42,8 @@ import java.util.Map;
     <security-domain name="clientidb".../>
     <security-domain name="clientidc".../>
     }
+ *
+ * auth request and token request supported
  *
  * CAUTION: Credentials cache must not be enabled, when using this module
  *
@@ -69,13 +76,46 @@ public class DelegatingLoginModule implements LoginModule {
     @Override
     public boolean login() throws LoginException {
         HttpServletRequest request = HttpContext.SERVLET_REQUEST.get();
-        AuthorizationRequest authorizationRequest = AuthorizationRequestUtil.resolveAuthorizationRequest(request);
-        if (authorizationRequest == null) {
-            log.error("AuthorizationRequest construction failed");
-            throw new LoginException("AuthorizationRequest construction failed");
+        HTTPRequest nimbusRequest = null;
+
+        try {
+            nimbusRequest = FixedServletUtils.createHTTPRequest(request);
+        } catch (IOException e) {
+            log.error("Error parsing Request", e);
+            throw new LoginException("Error parsing Request");
         }
 
-        ClientID clientID = authorizationRequest.getClientID();
+        ClientID clientID = null;
+
+        //auth request
+        try {
+            AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(nimbusRequest);
+            clientID = authorizationRequest != null ? authorizationRequest.getClientID() : null;
+        } catch (Exception e) {
+            log.trace("Exception parsing auth request", e);
+        }
+
+        //token request
+        if (clientID == null) {
+            try {
+                TokenRequest tokenRequest = TokenRequest.parse(nimbusRequest);
+                if (tokenRequest != null) {
+                    clientID = tokenRequest.getClientID();
+
+                    if (clientID == null && tokenRequest.getClientAuthentication() != null) {
+                        clientID = tokenRequest.getClientAuthentication().getClientID();
+                    }
+                }
+            } catch (Exception e) {
+                log.trace("Exception parsing token request", e);
+            }
+        }
+
+        if (clientID == null) {
+            log.error("Client Id Extraction failed");
+            throw new LoginException("Client Id Extraction failed");
+        }
+
 
         verifyClientID(clientID);
 
