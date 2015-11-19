@@ -8,6 +8,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
 import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -58,7 +59,11 @@ import org.opensaml.xml.schema.XSAny;
 import org.opensaml.xml.schema.XSString;
 import org.opensaml.xml.security.SecurityException;
 import org.opensaml.xml.security.credential.UsageType;
+import org.opensaml.xml.security.x509.BasicX509Credential;
 import org.opensaml.xml.security.x509.KeyStoreX509CredentialAdapter;
+import org.opensaml.xml.signature.Signature;
+import org.opensaml.xml.signature.SignatureValidator;
+import org.opensaml.xml.validation.ValidationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,6 +77,11 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 	public static final String SAML_KEY_SIGN_KEY_PASSWORD = "SAML_KEY_SIGN_KEY_PASSWORD";
 	public static final String SAML_IDP_URL = "SAML_IDP_URL";
 	public static final String SAML_ROLE_ATTRIBUTE_NAMES="SAML_ROLE_ATTRIBUTE_NAMES";
+	
+	public static final String SAML_IDP_TRUST_STORE_FILE_NAME="SAML_IDP_TRUST_STORE_FILE_NAME";
+	public static final String SAML_IDP_TRUST_STORE_TYPE = "SAML_IDP_TRUST_STORE_TYPE";
+	public static final String SAML_IDP_TRUST_STORE_PASSWORD = "SAML_IDP_TRUST_STORE_PASSWORD";
+	public static final String SAML_IDP_CERT_ALIAS = "SAML_IDP_CERT_ALIAS";
 
 	private static final Logger LOG = LoggerFactory.getLogger(SamlResponseAuthenticator.class);
 
@@ -85,6 +95,8 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 	
 	protected EnvUtils envUtils = new EnvUtils();
 	SecureRandomIdentifierGenerator secureRandomIdentifierGenerator = null;
+	
+	private SignatureValidator signatureValidator;
 
 	Map<String, String> idp2SpRoles = null;
 	@Override
@@ -98,45 +110,14 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 			} catch (ConfigurationException e) {
 				throw new IllegalStateException(e);
 			}
-//			
-//			SecurityConfiguration secConfig = Configuration.getGlobalSecurityConfiguration();
-//	        NamedKeyInfoGeneratorManager kiMgr = secConfig.getKeyInfoGeneratorManager();
-//	        kiMgr.registerFactory(X509Credential.class.getName(), factory);
-	        
 		}
 		
 		initVelocityEngine();
 		
-		String keyStoreFile = envUtils.getEnv(SAML_KEY_STORE_FILE_NAME, null);
-		if (StringUtils.isNotBlank(keyStoreFile)) {
-			String storeType = envUtils.getEnvThrowException(SAML_KEY_STORE_TYPE);
-			char[] keyStorePassword = envUtils.getEnvThrowException(
-					SAML_KEY_STORE_PASSWORD).toCharArray();
-			KeyStore keyStore = loadKeyStore(keyStoreFile, storeType,
-					keyStorePassword);
-			try {
-				Enumeration<String> aliases = keyStore.aliases();
-				while (aliases.hasMoreElements()) {
-					String alias = (String) aliases.nextElement();
-					LOG.debug("Key alias: " + alias);
-				}
-			} catch (Exception ex){
-				throw new IllegalStateException(ex);
-			}
-			String signKeyAlias = envUtils.getEnvThrowException(SAML_KEY_SIGN_KEY_ALIAS);
-			char[] signKeyPassword = envUtils.getEnvThrowException(
-					SAML_KEY_SIGN_KEY_PASSWORD).toCharArray();
-			try {
-				Key key = keyStore.getKey(signKeyAlias, signKeyPassword);
-				if(key==null) throw new IllegalStateException("can not reab saml signing key. ");
-			} catch (UnrecoverableKeyException | KeyStoreException
-					| NoSuchAlgorithmException e) {
-				throw new IllegalStateException(e);
-			}
-			credential = new KeyStoreX509CredentialAdapter(keyStore,
-					signKeyAlias, signKeyPassword);
-			credential.setUsageType(UsageType.SIGNING);
-		}
+		initSpKeyStore();
+		
+		initIdpTruststore();
+
 		idpUrl = envUtils.getEnvThrowException(SAML_IDP_URL);
 
 		roleAttributeNames = envUtils.getEnv(SAML_ROLE_ATTRIBUTE_NAMES,"Role,Roles,Membership,Memberships");
@@ -242,7 +223,7 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
     /**
      * checkSamlRespone
      */
-    @SuppressWarnings({ "deprecation", "rawtypes", "unchecked" })
+    @SuppressWarnings({"rawtypes"})
 	protected Principal checkSamlRespone(Request request) throws IOException {
         String samlResponse = request.getParameter("SAMLResponse");
         if (samlResponse == null) {
@@ -260,12 +241,22 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 
         Response response = (Response) messageContext.getInboundSAMLMessage();
 
-//        Signature signature = response.getSignature();
-//        SignatureValidator.validate(signature, credential);
+        if(signatureValidator!=null){
+	        Signature signature = response.getSignature();
+	        try {
+				signatureValidator.validate(signature);
+			} catch (ValidationException e) {
+	            LOG.error("Invalide IDP Signature", e);
+	        	throw new IllegalStateException("Invalide IDP Signature", e);
+			}
+        } else {
+        	LOG.warn("No idp certificate provided. Signature will not be validated ");
+        }
+        
         String relayState = request.getParameter("RelayState");;
         if(StringUtils.isBlank(relayState))relayState = messageContext.getRelayState();
         if(StringUtils.isBlank(relayState)){
-        	throw new IllegalStateException("Missing redicret information.");
+        	throw new IllegalStateException("Missing redirect information.");
         }
         
         // Check is relay state is only the query string part of the request or a full 
@@ -278,7 +269,7 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
             query = relayState;
         }
         if (StringUtils.isBlank(query)){
-        	throw new IllegalStateException("Missing redicret information.");
+        	throw new IllegalStateException("Missing redirect information.");
         }
         
         query = URIUtil.decode(query);
@@ -425,5 +416,76 @@ public class SamlRequestAuthenticator extends AuthenticatorBase {
 		result.put("GA_DIKS_STU_CM_BENUTZERKONTEN", "diksadmin");
 		result.put("GA_DIKS_STU_NACHRICHTENDIALOG", "postboxadmin");
 		return result;
+	}
+	
+	private void initSpKeyStore(){
+		String keyStoreFile = envUtils.getEnv(SAML_KEY_STORE_FILE_NAME, null);
+		if (StringUtils.isNotBlank(keyStoreFile)) {
+			String storeType = envUtils.getEnvThrowException(SAML_KEY_STORE_TYPE);
+			char[] keyStorePassword = envUtils.getEnvThrowException(
+					SAML_KEY_STORE_PASSWORD).toCharArray();
+			KeyStore keyStore = loadKeyStore(keyStoreFile, storeType,
+					keyStorePassword);
+			try {
+				Enumeration<String> aliases = keyStore.aliases();
+				while (aliases.hasMoreElements()) {
+					String alias = (String) aliases.nextElement();
+					LOG.debug("Key alias: " + alias);
+				}
+			} catch (Exception ex){
+				throw new IllegalStateException(ex);
+			}
+			String signKeyAlias = envUtils.getEnvThrowException(SAML_KEY_SIGN_KEY_ALIAS);
+			char[] signKeyPassword = envUtils.getEnvThrowException(
+					SAML_KEY_SIGN_KEY_PASSWORD).toCharArray();
+			try {
+				Key key = keyStore.getKey(signKeyAlias, signKeyPassword);
+				if(key==null) throw new IllegalStateException("can not reab saml signing key. ");
+			} catch (UnrecoverableKeyException | KeyStoreException
+					| NoSuchAlgorithmException e) {
+				throw new IllegalStateException(e);
+			}
+			credential = new KeyStoreX509CredentialAdapter(keyStore,
+					signKeyAlias, signKeyPassword);
+			credential.setUsageType(UsageType.SIGNING);
+		} else {
+        	LOG.warn("No signing key provided. Requests to idp will not be signed.");			
+		}		
+	}
+	
+	private void initIdpTruststore(){
+		String trustStoreFile = envUtils.getEnv(SAML_IDP_TRUST_STORE_FILE_NAME, null);
+		if (StringUtils.isNotBlank(trustStoreFile)) {
+			String storeType = envUtils.getEnvThrowException(SAML_IDP_TRUST_STORE_TYPE);
+			char[] trustStorePassword = envUtils.getEnvThrowException(
+					SAML_IDP_TRUST_STORE_PASSWORD).toCharArray();
+			KeyStore trustStore = loadKeyStore(trustStoreFile, storeType,
+					trustStorePassword);
+
+			String idpCertAlias = envUtils.getEnvThrowException(SAML_IDP_CERT_ALIAS);
+			Certificate certificate;
+			Certificate[] certificateChain;
+			try {
+				certificate = trustStore.getCertificate(idpCertAlias);
+				certificateChain = trustStore.getCertificateChain(idpCertAlias);
+			} catch (KeyStoreException e) {
+				throw new IllegalStateException("Can not access key store", e);
+			}
+			if(certificate==null && certificateChain==null)
+				throw new IllegalStateException("Missing certificate entry for alias : " + idpCertAlias);
+			
+			BasicX509Credential basicX509Credential = new BasicX509Credential();
+			if(certificate!=null){
+				basicX509Credential.setPublicKey(certificate.getPublicKey());
+			} else if (certificateChain!=null && certificateChain.length>0){
+				basicX509Credential.setPublicKey(certificateChain[0].getPublicKey());
+			} else {
+				throw new IllegalStateException("Missing certificate entry for alias : " + idpCertAlias);
+			}
+			signatureValidator = new SignatureValidator(basicX509Credential);
+		} else {
+        	LOG.warn("No idp certificate provided. Signature will not be validated ");			
+		}
+		
 	}
 }
