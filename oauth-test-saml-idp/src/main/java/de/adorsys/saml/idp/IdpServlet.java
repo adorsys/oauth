@@ -140,7 +140,8 @@ public class IdpServlet extends HttpServlet {
 		HttpServletResponseAdapter responseAdapter = new HttpServletResponseAdapter(resp, secure);
 		messageContext.setOutboundMessageTransport(responseAdapter);
 
-		HTTPPostEncoder postEncoder = new HTTPPostEncoder(velocityEngine,"templates/saml2-post-binding.vm");
+		HTTPPostEncoder postEncoder = new DiksHttpPostEncoder(velocityEngine,"templates/saml2-post-binding.vm");
+//		HTTPPostEncoder postEncoder = new HTTPPostEncoder(velocityEngine,"templates/saml2-post-binding.vm");
 		try {
 			postEncoder.encode(messageContext);
 		} catch (MessageEncodingException e) {
