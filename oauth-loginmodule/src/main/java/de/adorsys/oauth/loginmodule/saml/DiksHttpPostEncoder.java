@@ -6,7 +6,6 @@ import org.opensaml.common.SAMLObject;
 import org.opensaml.common.SignableSAMLObject;
 import org.opensaml.common.binding.SAMLMessageContext;
 import org.opensaml.saml2.binding.encoding.HTTPPostEncoder;
-import org.opensaml.ws.message.MessageContext;
 import org.opensaml.ws.message.encoder.MessageEncodingException;
 import org.opensaml.xml.XMLObjectBuilder;
 import org.opensaml.xml.io.Marshaller;
@@ -21,7 +20,6 @@ import org.opensaml.xml.signature.KeyInfo;
 import org.opensaml.xml.signature.Signature;
 import org.opensaml.xml.signature.SignatureException;
 import org.opensaml.xml.signature.Signer;
-import org.opensaml.xml.util.XMLHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,22 +76,6 @@ public class DiksHttpPostEncoder extends HTTPPostEncoder {
         }
 	}
 
-
-	@Override
-	protected void logEncodedMessage(MessageContext messageContext) {
-        if(messageContext.getOutboundMessage() != null){
-            if (messageContext.getOutboundMessage().getDOM() == null) {
-                try {
-                    marshallMessage(messageContext.getOutboundMessage());
-                } catch (MessageEncodingException e) {
-                	LOG.error("Unable to marshall message for logging purposes: " + e.getMessage());
-                    return;
-                }
-            }
-            LOG.info("\n" + XMLHelper.prettyPrintXML(messageContext.getOutboundMessage().getDOM()));
-        }
-	}	
-	
     public static void prepareSignatureParams(Signature signature, Credential signingCredential,
             SecurityConfiguration config) throws SecurityException {
 
@@ -126,7 +108,6 @@ public class DiksHttpPostEncoder extends HTTPPostEncoder {
 	        X509KeyInfoGeneratorFactory factory = new X509KeyInfoGeneratorFactory();
 	        factory.setEmitEntityCertificate(true);
 	        KeyInfoGenerator kiGenerator = factory.newInstance();
-//            KeyInfoGenerator kiGenerator = getKeyInfoGenerator(signingCredential, secConfig, keyInfoGenName);
             if (kiGenerator != null) {
                 try {
                     KeyInfo keyInfo = kiGenerator.generate(signingCredential);
@@ -136,8 +117,6 @@ public class DiksHttpPostEncoder extends HTTPPostEncoder {
                     throw e;
                 }
             } else {
-//            	LOG.info("No factory for named KeyInfoGenerator {} was found for credential type {}", keyInfoGenName,
-//                        signingCredential.getCredentialType().getName());
             	LOG.info("No KeyInfo will be generated for Signature");
             }
         }
