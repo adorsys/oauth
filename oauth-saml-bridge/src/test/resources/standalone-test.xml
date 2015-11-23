@@ -27,9 +27,9 @@
 
     <system-properties>
         <property name="hibernate.hbm2ddl.auto" value="create-drop"/>
-        <property name="oauth.auth" value="http://localhost:8280/oauth/auth" />
-        <property name="oauth.token" value="http://localhost:8280/oauth/token" />
-        <property name="oauth.userinfo" value="http://localhost:8280/oauth/userinfo" />
+        <property name="oauth.auth" value="http://localhost:8280/api/auth" />
+        <property name="oauth.token" value="http://localhost:8280/api/token" />
+        <property name="oauth.userinfo" value="http://localhost:8280/api/userinfo" />
         <property name="saml.idp.url" value="http://localhost:8280/idp/" />
     </system-properties>
 
@@ -307,7 +307,7 @@
         </subsystem>
         <subsystem xmlns="urn:jboss:domain:web:2.2" default-virtual-server="default-host" native="false">
             <connector name="http" protocol="HTTP/1.1" scheme="http" socket-binding="http"/>
-            <virtual-server name="default-host" enable-welcome-root="true">
+            <virtual-server name="default-host" enable-welcome-root="false">
                 <alias name="localhost"/>
             </virtual-server>
         </subsystem>

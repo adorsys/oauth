@@ -74,7 +74,7 @@ public abstract class ArquillianBase {
 
     protected URI getAuthEndpoint() {
         try {
-            return new URI("http://localhost:8180/oauth/auth");
+            return new URI("http://localhost:8180/api/auth");
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -82,7 +82,7 @@ public abstract class ArquillianBase {
     
     protected URI getTokenEndpoint() {
         try {
-            return new URI("http://localhost:8180/oauth/token");
+            return new URI("http://localhost:8180/api/token");
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -90,7 +90,7 @@ public abstract class ArquillianBase {
 
     protected URI getUserInfoEndpoint() {
         try {
-            return new URI("http://localhost:8180/oauth/userinfo");
+            return new URI("http://localhost:8180/api/userinfo");
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -98,7 +98,7 @@ public abstract class ArquillianBase {
 
     protected URI getRedirect(String redirect) {
         try {
-            return new URI("http://localhost:8180/oauth/" + redirect);
+            return new URI("http://localhost:8180/api/" + redirect);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }

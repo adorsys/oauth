@@ -103,7 +103,7 @@
           <groupId>${project.groupId}</groupId>
           <artifactId>oauth-client-jaas</artifactId>
           <version>${project.version}</version>
-          <type>zip</type>
+          <type>tar.gz</type>
           <scope>test</scope>
         </dependency>
       </dependencies>
@@ -173,11 +173,14 @@
                       <directory>src/test/resources</directory>
                       <includes>
                         <include>standalone-test.xml</include>
+                        <include>mgmt-users.properties</include>
+                        <include>mgmt-groups.properties</include>
                       </includes>
                     </resource>
                   </resources>
                 </configuration>
               </execution>
+              <!-- 
               <execution>
                 <id>copy-standalone-conf</id>
                 <phase>process-sources</phase>
@@ -197,6 +200,7 @@
                   </resources>
                 </configuration>
               </execution>
+               -->
             </executions>
           </plugin>
         </plugins>

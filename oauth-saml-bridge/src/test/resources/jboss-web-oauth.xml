@@ -1,5 +1,5 @@
 <jboss-web>
-  <context-root>sample</context-root>
+  <context-root>sample2</context-root>
   <security-domain>oauth-client</security-domain>
 
   <valve>

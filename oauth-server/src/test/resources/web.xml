@@ -5,7 +5,7 @@
   <security-constraint>
     <web-resource-collection>
       <web-resource-name>auth</web-resource-name>
-      <url-pattern>/auth</url-pattern>
+      <url-pattern>/api/auth</url-pattern>
       <http-method>GET</http-method>
       <http-method>POST</http-method>
     </web-resource-collection>
@@ -17,7 +17,7 @@
   <security-constraint>
     <web-resource-collection>
       <web-resource-name>token</web-resource-name>
-      <url-pattern>/token</url-pattern>
+      <url-pattern>/api/token</url-pattern>
       <http-method>GET</http-method>
       <http-method>POST</http-method>
     </web-resource-collection>
