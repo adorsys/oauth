@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (C) 2015 Daniel Straub, Sandro Sonntag, Christian Brandenstein, Francis Pouatcha (sso@adorsys.de, dst@adorsys.de, cbr@adorsys.de, fpo@adorsys.de)
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+            http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
@@ -45,6 +62,24 @@
 		<developer>
 			<name>Sandro Sonntag</name>
 			<email>sso@adorsys.de</email>
+			<organization>adorsys</organization>
+			<organizationUrl>https://adorsys.de/</organizationUrl>
+		</developer>
+		<developer>
+			<name>Daniel Straub</name>
+			<email>dts@adorsys.de</email>
+			<organization>adorsys</organization>
+			<organizationUrl>https://adorsys.de/</organizationUrl>
+		</developer>
+		<developer>
+			<name>Christian Brandenstein</name>
+			<email>cbr@adorsys.de</email>
+			<organization>adorsys</organization>
+			<organizationUrl>https://adorsys.de/</organizationUrl>
+		</developer>
+		<developer>
+			<name>Francis Pouatcha</name>
+			<email>fpo@adorsys.de</email>
 			<organization>adorsys</organization>
 			<organizationUrl>https://adorsys.de/</organizationUrl>
 		</developer>
@@ -216,8 +251,8 @@
 					<header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</header>
 					<licenseName>ASL 2.0</licenseName>
 					<properties>
-						<owner>Sandro Sonntag</owner>
-						<email>sso@adorsys.de</email>
+						<owner>Daniel Straub, Sandro Sonntag, Christian Brandenstein, Francis Pouatcha</owner>
+						<email>sso@adorsys.de, dst@adorsys.de, cbr@adorsys.de, fpo@adorsys.de</email>
 					</properties>
 					<excludes>
 						<exclude>**/README</exclude>
