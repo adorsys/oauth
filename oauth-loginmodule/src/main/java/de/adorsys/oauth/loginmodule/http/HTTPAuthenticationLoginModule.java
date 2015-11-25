@@ -32,6 +32,7 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 
+import org.apache.http.Consts;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -76,8 +77,7 @@ public class HTTPAuthenticationLoginModule implements LoginModule {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState,
-			Map<String, ?> options) {
+	public void initialize(Subject subject, CallbackHandler callbackHandler, Map<String, ?> sharedState, Map<String, ?> options) {
 		this.subject = subject;
 		this.callbackHandler = callbackHandler;
 		this.sharedState = (Map<String, Object>) sharedState;
@@ -94,7 +94,6 @@ public class HTTPAuthenticationLoginModule implements LoginModule {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public boolean login() throws LoginException {
 
 		NameCallback nameCallback = new NameCallback("name");
@@ -107,7 +106,7 @@ public class HTTPAuthenticationLoginModule implements LoginModule {
 
 		String username = nameCallback.getName();
 		char[] passwordChars = passwordCallback.getPassword();
-		String password = passwordChars==null?null:new String(passwordChars);
+		String password = passwordChars == null ? null : new String(passwordChars);
 
 		LOG.info("login {}", username);
 
@@ -123,13 +122,12 @@ public class HTTPAuthenticationLoginModule implements LoginModule {
 	private boolean authenticate(String username, String password) throws LoginException {
 		HttpHost targetHost = new HttpHost(restEndpoint.getHost(), restEndpoint.getPort(), restEndpoint.getScheme());
 		CredentialsProvider credsProvider = new BasicCredentialsProvider();
-		credsProvider.setCredentials(new AuthScope(targetHost.getHostName(), targetHost.getPort()),
-				new UsernamePasswordCredentials(username, password));
+		credsProvider.setCredentials(new AuthScope(targetHost.getHostName(), targetHost.getPort()), new UsernamePasswordCredentials(username, password));
 
 		// Create AuthCache instance
 		AuthCache authCache = new BasicAuthCache();
 		// Generate BASIC scheme object and add it to the local auth cache
-		BasicScheme basicAuth = new BasicScheme();
+		BasicScheme basicAuth = new BasicScheme(Consts.UTF_8);
 		authCache.put(targetHost, basicAuth);
 
 		// Add AuthCache to the execution context
@@ -145,14 +143,15 @@ public class HTTPAuthenticationLoginModule implements LoginModule {
 			if (userInfoResponse.getStatusLine().getStatusCode() != 200) {
 				LOG.error("Authentication failed for user {}, restEndpoint {} HTTP Status {}", username, restEndpoint.toASCIIString(),
 						userInfoResponse.getStatusLine());
-				throw new LoginException("Authentication failed for user " +username + ", restEndpoint " + restEndpoint.toASCIIString() + " HTTP Status " + userInfoResponse.getStatusLine());
+				throw new LoginException("Authentication failed for user " + username + ", restEndpoint " + restEndpoint.toASCIIString() + " HTTP Status "
+						+ userInfoResponse.getStatusLine());
 			}
 			String userInfoJson = readUserInfo(userInfoResponse);
 			JSONObject userInfo = new JSONObject(userInfoJson);
 			String principalId = userInfo.getString("principal");
 			if (principalId == null) {
 				LOG.error("could not read  field 'principal' for user {}. Response: {}", username, userInfoJson);
-				throw new LoginException("could not read  field 'principal' for user " + username +". Response: " + userInfoJson);
+				throw new LoginException("could not read  field 'principal' for user " + username + ". Response: " + userInfoJson);
 			}
 			JSONArray roles = userInfo.getJSONArray("roles");
 
