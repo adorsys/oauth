@@ -23,6 +23,9 @@
 	<artifactId>oauth-parent</artifactId>
 	<version>0.9-SNAPSHOT</version>
 	<packaging>pom</packaging>
+	<name>OAuth JEE Component</name>
+	<description>oauth components for ee-server (currently only JBoss)</description>
+	<url>https://github.com/adorsys/oauth</url>
 
 	<properties>
 		<maven.compiler.source>1.7</maven.compiler.source>
