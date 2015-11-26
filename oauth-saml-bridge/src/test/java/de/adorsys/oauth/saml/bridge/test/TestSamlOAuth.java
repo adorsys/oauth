@@ -38,7 +38,7 @@ public class TestSamlOAuth {
     public static Archive createOAuthDeployment() {
 
         File[] dependencies = Maven.configureResolver().workOffline(false).loadPomFromFile("pom.xml").importRuntimeDependencies()
-                .resolve("org.opensaml:opensaml-saml-impl", "de.adorsys:oauth-server", "de.adorsys:oauth-tokenstore-jpa")
+                .resolve("org.opensaml:opensaml-saml-impl", "de.adorsys.oauth:oauth-server", "de.adorsys.oauth:oauth-tokenstore-jpa")
                 .withTransitivity().asFile();
 
         Archive archive = ShrinkWrap.create(WebArchive.class, "oauth-server.war")

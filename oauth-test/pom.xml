@@ -20,7 +20,7 @@
 
   <parent>
     <artifactId>oauth-parent</artifactId>
-    <groupId>de.adorsys</groupId>
+    <groupId>de.adorsys.oauth</groupId>
     <version>0.10-SNAPSHOT</version>
   </parent>
 
