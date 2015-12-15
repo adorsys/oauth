@@ -15,6 +15,18 @@
  */
 package de.adorsys.oauth.server;
 
+import com.nimbusds.oauth2.sdk.http.HTTPResponse;
+import com.nimbusds.oauth2.sdk.http.ServletUtils;
+import com.nimbusds.oauth2.sdk.token.AccessToken;
+import com.nimbusds.oauth2.sdk.token.BearerTokenError;
+import com.nimbusds.openid.connect.sdk.UserInfoErrorResponse;
+import com.nimbusds.openid.connect.sdk.UserInfoRequest;
+import com.nimbusds.openid.connect.sdk.UserInfoSuccessResponse;
+import com.nimbusds.openid.connect.sdk.claims.UserInfo;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
@@ -22,17 +34,6 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
-import com.nimbusds.oauth2.sdk.token.AccessToken;
-import com.nimbusds.oauth2.sdk.token.BearerTokenError;
-import com.nimbusds.openid.connect.sdk.UserInfoErrorResponse;
-import com.nimbusds.openid.connect.sdk.UserInfoRequest;
-import com.nimbusds.openid.connect.sdk.UserInfoSuccessResponse;
-import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 /**
  * UserInfoResource
@@ -61,7 +62,7 @@ public class UserInfoResource {
         try {
             userInfoRequest = UserInfoRequest.parse(FixedServletUtils.createHTTPRequest(servletRequest));
         } catch (Exception e) {
-            FixedServletUtils.applyHTTPResponse(
+            ServletUtils.applyHTTPResponse(
                     new UserInfoErrorResponse(BearerTokenError.INVALID_REQUEST).toHTTPResponse(),
                     servletResponse);
             return;
@@ -74,7 +75,7 @@ public class UserInfoResource {
 
         UserInfo userInfo = tokenStore.loadUserInfo(accessToken.getValue());
         if (userInfo == null) {
-            FixedServletUtils.applyHTTPResponse(
+            ServletUtils.applyHTTPResponse(
                     new UserInfoErrorResponse(BearerTokenError.INVALID_TOKEN).toHTTPResponse(),
                     servletResponse);
             return;
@@ -85,7 +86,7 @@ public class UserInfoResource {
         HTTPResponse httpResponse = new UserInfoSuccessResponse(userInfo).toHTTPResponse();
         httpResponse.setCacheControl("s-maxage=" + lifeTime);
 
-        FixedServletUtils.applyHTTPResponse(httpResponse, servletResponse);
+        ServletUtils.applyHTTPResponse(httpResponse, servletResponse);
 
     }
 }

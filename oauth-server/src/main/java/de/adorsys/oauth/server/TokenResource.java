@@ -15,7 +15,21 @@
  */
 package de.adorsys.oauth.server;
 
-import java.security.Principal;
+import com.nimbusds.oauth2.sdk.AccessTokenResponse;
+import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
+import com.nimbusds.oauth2.sdk.AuthorizationGrant;
+import com.nimbusds.oauth2.sdk.GrantType;
+import com.nimbusds.oauth2.sdk.OAuth2Error;
+import com.nimbusds.oauth2.sdk.TokenErrorResponse;
+import com.nimbusds.oauth2.sdk.TokenRequest;
+import com.nimbusds.oauth2.sdk.http.ServletUtils;
+import com.nimbusds.oauth2.sdk.token.AccessToken;
+import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
+import com.nimbusds.oauth2.sdk.token.RefreshToken;
+import com.nimbusds.openid.connect.sdk.claims.UserInfo;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -27,21 +41,6 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.nimbusds.oauth2.sdk.AccessTokenResponse;
-import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
-import com.nimbusds.oauth2.sdk.AuthorizationGrant;
-import com.nimbusds.oauth2.sdk.GrantType;
-import com.nimbusds.oauth2.sdk.OAuth2Error;
-import com.nimbusds.oauth2.sdk.TokenErrorResponse;
-import com.nimbusds.oauth2.sdk.TokenRequest;
-import com.nimbusds.oauth2.sdk.token.AccessToken;
-import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
-import com.nimbusds.oauth2.sdk.token.RefreshToken;
-import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 /**
  * TokenResource
@@ -60,9 +59,6 @@ public class TokenResource {
 
     @Context
     private ServletContext servletContext;
-
-    @Inject
-    private Principal principal;
 
     @Inject
     private UserInfoFactory userInfoFactory;
@@ -95,7 +91,7 @@ public class TokenResource {
         } else if (authorizationGrant.getType() == GrantType.PASSWORD) {
             resourceOwnerPasswordCredentialFlow(request);
         } else {
-            FixedServletUtils.applyHTTPResponse(
+            ServletUtils.applyHTTPResponse(
                     new TokenErrorResponse(OAuth2Error.UNSUPPORTED_GRANT_TYPE).toHTTPResponse(), servletResponse);
         }
     }
@@ -107,7 +103,7 @@ public class TokenResource {
 
         if (accessToken == null) {
             LOG.info("tokenRequest: invalid grant {}", authorizationCodeGrant.getAuthorizationCode());
-            FixedServletUtils.applyHTTPResponse(
+            ServletUtils.applyHTTPResponse(
                     new TokenErrorResponse(OAuth2Error.INVALID_GRANT).toHTTPResponse(),
                     servletResponse);
             return;
@@ -120,7 +116,7 @@ public class TokenResource {
 
         LOG.info("accessToken {}", accessToken.toJSONString());
 
-        FixedServletUtils.applyHTTPResponse(
+        ServletUtils.applyHTTPResponse(
                 new AccessTokenResponse(accessToken, refreshToken).toHTTPResponse(),
                 servletResponse);
     }
@@ -139,7 +135,7 @@ public class TokenResource {
 
         LOG.info("accessToken {}", accessToken.toJSONString());
 
-        FixedServletUtils.applyHTTPResponse(
+        ServletUtils.applyHTTPResponse(
                 new AccessTokenResponse(accessToken, refreshToken).toHTTPResponse(),
                 servletResponse);
     }

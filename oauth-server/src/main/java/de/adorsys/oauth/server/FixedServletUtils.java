@@ -15,34 +15,27 @@
  */
 package de.adorsys.oauth.server;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import net.jcip.annotations.ThreadSafe;
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.http.HTTPRequest;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
+import javax.servlet.http.HttpServletRequest;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.Map;
+import java.util.Map.Entry;
 
 
 /**
  * HTTP servlet utilities.
+ * Fixed createHTTPRequest from Nimbus ServletUtils
  */
-@ThreadSafe
 public class FixedServletUtils {
-
 
 	/**
 	 * Reconstructs the request URL string for the specified servlet
@@ -95,7 +88,6 @@ public class FixedServletUtils {
 
 		return sb.toString();
 	}
-
 
 	/**
 	 * Creates a new HTTP request from the specified HTTP servlet request.
@@ -183,18 +175,18 @@ public class FixedServletUtils {
 			
 			Map<String, String[]> parameterMap = sr.getParameterMap();
 			StringBuilder builder = new StringBuilder();
-			if(!parameterMap.isEmpty()){
-				Iterator<Entry<String, String[]>> iterator = parameterMap.entrySet().iterator();
-				while (iterator.hasNext()) {
-					Map.Entry<String,String[]> entry = (Map.Entry<String,String[]>) iterator.next();
+
+			if (!parameterMap.isEmpty()) {
+				for (Entry<String, String[]> entry : parameterMap.entrySet()) {
 					String key = entry.getKey();
 					String[] value = entry.getValue();
-					if(value.length>0){
+					if (value.length > 0) {
 						builder = builder.append(key).append('=').append(value[0]).append('&');
 					}
 				}
 				String queryString = StringUtils.substringBeforeLast(builder.toString(), "&");
 				request.setQuery(queryString);
+
 			} else {
 				// read body
 				StringBuilder body = new StringBuilder(256);
@@ -221,44 +213,6 @@ public class FixedServletUtils {
 		}
 
 		return request;
-	}
-
-
-	/**
-	 * Applies the status code, headers and content of the specified HTTP
-	 * response to a HTTP servlet response.
-	 *
-	 * @param httpResponse    The HTTP response. Must not be {@code null}.
-	 * @param servletResponse The HTTP servlet response. Must not be
-	 *                        {@code null}.
-	 *
-	 * @throws IOException If the response content couldn't be written.
-	 */
-	public static void applyHTTPResponse(final HTTPResponse httpResponse,
-					     final HttpServletResponse servletResponse)
-		throws IOException {
-
-		// Set the status code
-		servletResponse.setStatus(httpResponse.getStatusCode());
-
-
-		// Set the headers, but only if explicitly specified
-		for (Map.Entry<String,String> header : httpResponse.getHeaders().entrySet()) {
-			servletResponse.setHeader(header.getKey(), header.getValue());
-		}
-
-		if (httpResponse.getContentType() != null)
-			servletResponse.setContentType(httpResponse.getContentType().toString());
-
-
-		// Write out the content
-
-		if (httpResponse.getContent() != null) {
-
-			PrintWriter writer = servletResponse.getWriter();
-			writer.print(httpResponse.getContent());
-			writer.close();
-		}
 	}
 
 }
