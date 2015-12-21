@@ -26,7 +26,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black"/>
 <link rel="shortcut icon" href="/oauth-login-theme/img/favicon.ico" />
 <link rel="stylesheet" href="/oauth-login-theme/css/application.css"/>
-<script src="/oauth-login-theme/js/custom.js"></script>
 <title translate>title</title>
 <script>
     var bouncer = {
