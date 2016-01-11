@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.adorsys.oauth.valve.authdispatcher.matcher;
+package de.adorsys.oauth.authdispatcher.matcher;
 
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 
-import de.adorsys.oauth.valve.authdispatcher.FixedServletUtils;
+import de.adorsys.oauth.authdispatcher.FixedServletUtils;
 
 import org.apache.catalina.valves.ValveBase;
 import org.apache.commons.lang3.StringUtils;

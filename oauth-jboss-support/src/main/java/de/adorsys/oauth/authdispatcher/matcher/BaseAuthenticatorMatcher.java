@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.adorsys.oauth.valve.authdispatcher.matcher;
+package de.adorsys.oauth.authdispatcher.matcher;
 
 
-import de.adorsys.oauth.valve.authdispatcher.AuthenticatorMatcher;
+import de.adorsys.oauth.authdispatcher.AuthenticatorMatcher;
 
 import org.apache.catalina.valves.ValveBase;
 

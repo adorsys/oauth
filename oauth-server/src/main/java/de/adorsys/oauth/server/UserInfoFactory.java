@@ -42,7 +42,7 @@ public class UserInfoFactory {
     private CustomClaim customClaim;
 
     /**
-     * resolveAuthorizationRequest
+     * createUserInfo
      */
     public UserInfo createUserInfo(HttpServletRequest servletRequest) {
         Object object = servletRequest.getAttribute("userInfo");

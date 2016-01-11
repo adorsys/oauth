@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.adorsys.oauth.valve.authdispatcher.matcher;
+package de.adorsys.oauth.authdispatcher.matcher;
 
-import org.apache.catalina.Realm;
 import org.apache.catalina.authenticator.AuthenticatorBase;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.deploy.LoginConfig;

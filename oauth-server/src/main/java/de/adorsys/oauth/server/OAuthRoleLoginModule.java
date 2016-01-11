@@ -26,7 +26,9 @@ import javax.security.auth.spi.LoginModule;
 
 /**
  * OAuthRoleLoginModule
+ * Deprecated: use Jboss IdentyLoginModule
  */
+@Deprecated
 public class OAuthRoleLoginModule implements LoginModule {
 
     private Subject subject;

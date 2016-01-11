@@ -13,19 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.adorsys.oauth.valve.authdispatcher;
+package de.adorsys.oauth.authdispatcher.matcher;
 
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 
 import org.apache.catalina.valves.ValveBase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 
-import java.util.List;
+public class FormAuthAuthenticatorMatcher extends BaseAuthenticatorMatcher {
 
-public interface AuthenticatorMatcher {
+	private static final Logger LOG = LoggerFactory.getLogger(FormAuthAuthenticatorMatcher.class);
 
-	ValveBase match(HttpServletRequest request, AuthorizationRequest authorizationRequest);
+	public FormAuthAuthenticatorMatcher() {
+		valve = new StatelessFormAuthenticator();
+	}
 
-	List<ValveBase> valves();
+	@Override
+	public ValveBase match(HttpServletRequest request, AuthorizationRequest authorizationRequest) {
+		return authorizationRequest != null && request.getParameter("formlogin") != null ? valve : null;
+	}
+
 }

@@ -33,7 +33,10 @@ import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 /**
  * OAuthInfoLoginModule
  * Purpose of this module is to provide oauth informations for the following login modules
+ *
+ * Deprecated: use oauth-jboss-support OAuthAuthenticationDispatcher as valve
  */
+@Deprecated
 @SuppressWarnings("unchecked")
 public class OAuthInfoLoginModule implements LoginModule {
 

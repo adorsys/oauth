@@ -16,10 +16,10 @@
 package de.adorsys.oauth.server;
 
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.enterprise.context.Dependent;
 import java.security.Principal;
 import java.security.acl.Group;
 import java.util.ArrayList;
@@ -29,7 +29,6 @@ import java.util.Set;
 /**
  * CustomClaim
  */
-@Dependent
 public class CustomClaim {
 
     private static final Logger LOG = LoggerFactory.getLogger(CustomClaim.class);

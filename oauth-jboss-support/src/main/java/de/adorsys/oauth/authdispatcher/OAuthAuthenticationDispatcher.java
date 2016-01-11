@@ -17,14 +17,14 @@
  * 
  */
 
-package de.adorsys.oauth.valve.authdispatcher;
+package de.adorsys.oauth.authdispatcher;
 
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 
-import de.adorsys.oauth.valve.authdispatcher.matcher.BasicAuthAuthenticatorMatcher;
-import de.adorsys.oauth.valve.authdispatcher.matcher.FormAuthAuthenticatorMatcher;
+import de.adorsys.oauth.authdispatcher.matcher.BasicAuthAuthenticatorMatcher;
+import de.adorsys.oauth.authdispatcher.matcher.FormAuthAuthenticatorMatcher;
 
 import org.apache.catalina.Container;
 import org.apache.catalina.Valve;
