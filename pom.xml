@@ -70,7 +70,7 @@
     </developer>
     <developer>
       <name>Daniel Straub</name>
-      <email>dts@adorsys.de</email>
+      <email>dst@adorsys.de</email>
       <organization>adorsys</organization>
       <organizationUrl>https://adorsys.de/</organizationUrl>
     </developer>
@@ -92,7 +92,6 @@
     <module>oauth-server</module>
     <module>oauth-tokenstore-jpa</module>
     <module>oauth-tokenstore-mongodb</module>
-    <module>oauth-loginmodule</module>
     <module>oauth-jboss-support</module>
     <module>oauth-client-jaas</module>
     <module>oauth-client-jaspic</module>
