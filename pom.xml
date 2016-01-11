@@ -90,6 +90,7 @@
 
   <modules>
     <module>oauth-server</module>
+    <module>oauth-server-sample</module>
     <module>oauth-tokenstore-jpa</module>
     <module>oauth-tokenstore-mongodb</module>
     <module>oauth-jboss-support</module>
@@ -252,7 +253,7 @@
           <licenseName>ASL 2.0</licenseName>
           <properties>
             <owner>Daniel Straub, Sandro Sonntag, Christian Brandenstein, Francis Pouatcha</owner>
-            <email>sso@adorsys.de, dst@adorsys.de, cbr@adorsys.de, fpo@adorsys.de</email>
+            <email>dst@adorsys.de, sso@adorsys.de, cbr@adorsys.de, fpo@adorsys.de</email>
           </properties>
           <excludes>
             <exclude>**/README</exclude>
