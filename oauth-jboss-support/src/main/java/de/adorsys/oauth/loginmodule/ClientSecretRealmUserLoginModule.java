@@ -75,7 +75,13 @@ public class ClientSecretRealmUserLoginModule extends RealmUsersRolesLoginModule
 
     @Override
     public boolean commit() throws LoginException {
-        return abort ? super.abort() : super.commit();
+        if (abort) {
+            // commit must be ignored, otherwise the following login modules commits will not be called
+            super.abort(); // remove principal from super login module
+            return false; // ignore commit
+        } else {
+            return super.commit(); // pass-through
+        }
     }
 
     @Override
