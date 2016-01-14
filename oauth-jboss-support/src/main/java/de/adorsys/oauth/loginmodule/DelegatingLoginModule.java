@@ -104,7 +104,7 @@ public class DelegatingLoginModule implements LoginModule {
             log.trace("Exception parsing auth request", e);
         }
         try {
-            TokenRequest tokenRequest = (TokenRequest) PolicyContext.getContext(AuthorizationRequest.class.getName());
+            TokenRequest tokenRequest = (TokenRequest) PolicyContext.getContext(TokenRequest.class.getName());
             if (tokenRequest.getClientID() == null && tokenRequest.getClientAuthentication() != null) {
                 return tokenRequest.getClientAuthentication().getClientID();
             }
