@@ -63,6 +63,12 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.jayway.restassured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <version>2.6.0</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <profiles>
@@ -101,13 +107,16 @@
           <groupId>${project.groupId}</groupId>
           <artifactId>oauth-tokenstore-jpa</artifactId>
           <version>${project.version}</version>
-          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>oauth-jboss-support</artifactId>
+          <version>${project.version}</version>
         </dependency>
         <dependency>
           <groupId>${project.groupId}</groupId>
           <artifactId>oauth-server</artifactId>
           <version>${project.version}</version>
-          <scope>test</scope>
         </dependency>
       </dependencies>
       <build>
@@ -137,9 +146,15 @@
                   <goal>copy-dependencies</goal>
                 </goals>
                 <configuration>
-                  <includeArtifactIds>oauth-server,oauth-tokenstore-jpa</includeArtifactIds>
+                  <excludeGroupIds>
+                    org.jboss.as,javax.inject,org.slf4j,javax.mail,org.jboss.metadata,org.jboss.spec.javax.annotation,org.jboss.spec.javax.servlet,org.jboss.logging,system
+                  </excludeGroupIds>
                   <excludeTransitive>false</excludeTransitive>
+                  <stripVersion>true</stripVersion>
                   <outputDirectory>target/jboss-eap-${version.jboss.as}/standalone/deployments/idp.war/WEB-INF/lib</outputDirectory>
+                  <includeScope>compile</includeScope>
+                  <silent>true</silent>
+                  <prependGroupId>false</prependGroupId>
                 </configuration>
               </execution>
               <execution>

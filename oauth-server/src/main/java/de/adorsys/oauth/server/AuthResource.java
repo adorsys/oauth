@@ -15,11 +15,17 @@
  */
 package de.adorsys.oauth.server;
 
-import java.net.URI;
-import java.net.URL;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+import com.nimbusds.oauth2.sdk.AuthorizationCode;
+import com.nimbusds.oauth2.sdk.AuthorizationErrorResponse;
+import com.nimbusds.oauth2.sdk.AuthorizationRequest;
+import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse;
+import com.nimbusds.oauth2.sdk.OAuth2Error;
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
+import com.nimbusds.openid.connect.sdk.claims.UserInfo;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -34,17 +40,11 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.nimbusds.oauth2.sdk.AuthorizationCode;
-import com.nimbusds.oauth2.sdk.AuthorizationErrorResponse;
-import com.nimbusds.oauth2.sdk.AuthorizationRequest;
-import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse;
-import com.nimbusds.oauth2.sdk.OAuth2Error;
-import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
-import com.nimbusds.openid.connect.sdk.claims.UserInfo;
+import java.net.URI;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -56,6 +56,8 @@ import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 public class AuthResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuthResource.class);
+
+    private static final String CLIENT_ID_STR = "client_id";
 
     @Context
     private HttpServletRequest servletRequest;
@@ -114,7 +116,7 @@ public class AuthResource {
                     .build();
         }
 
-        UserInfo userInfo = createUserInfo(request);
+        UserInfo userInfo = userInfoFactory.createUserInfo(servletRequest);
         LOG.debug(userInfo.toJSONObject().toJSONString());
         
         BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
@@ -140,31 +142,26 @@ public class AuthResource {
     @GET
     public Response authorizeGet() throws Exception {
         return authorizePost();
-
     }
 
     /**
      * resolveAuthorizationRequest
      */
     private AuthorizationRequest resolveAuthorizationRequest() throws ParseException {
-    		
-    	String CLIENT_ID_STR = "client_id";
-    	if(isNotBlank(servletRequest.getParameter(CLIENT_ID_STR))){
-			Map<String, String> params = toSingleParamMap(servletRequest);
-			return AuthorizationRequest.parse(params );
+
+        if (isNotBlank(servletRequest.getParameter(CLIENT_ID_STR))) {
+			return AuthorizationRequest.parse(requestParameters(servletRequest));
     	}
     	
-    	if((contains(servletRequest.getQueryString(), CLIENT_ID_STR))){
+    	if ((contains(servletRequest.getQueryString(), CLIENT_ID_STR))) {
     		return AuthorizationRequest.parse(servletRequest.getQueryString());
     	}
 
-    	// if we are dealing with a returning SAMLREsponse we might consider parsing 
-    	// the relayState
-    	if(servletRequest.getParameter("SAMLResponse")!=null && servletRequest.getParameter("RelayState")!=null){
+    	// if we are dealing with a returning SAMLREsponse we might consider parsing the relayState
+    	if (servletRequest.getParameter("SAMLResponse") != null && servletRequest.getParameter("RelayState") != null){
     		try {
-    			String serviceUrl = servletRequest.getParameter("RelayState");
-    			URL url = new URL(serviceUrl);
-    			if(contains(url.getQuery(), CLIENT_ID_STR)){
+    			URL url = new URL(servletRequest.getParameter("RelayState"));
+    			if (contains(url.getQuery(), CLIENT_ID_STR)){
     				return AuthorizationRequest.parse(url.getQuery());
     			}
     		} catch (Exception ex){
@@ -176,38 +173,19 @@ public class AuthResource {
     }
 
     private boolean contains(String queryString, String searchStr) {
-    	if(queryString==null) return false;
-		return queryString.contains(searchStr);
-	}
+        return queryString != null && queryString.contains(searchStr);
+    }
 
 
 	private boolean isNotBlank(String parameter) {
-		if(parameter==null) return false;
-		return parameter.trim().length()>0;
-	}
-
-
-	private UserInfo createUserInfo(AuthorizationRequest request) {
-        UserInfo userInfo = userInfoFactory.createUserInfo(servletRequest);
-
-        if (request == null) {
-            return userInfo;
-        }
-
-        // for what ever ...
-        userInfo.setClaim("clientID", request.getClientID());
-        if (request.getScope() != null) {
-            userInfo.setClaim("scope", request.getScope());
-        }
-
-        return userInfo;
+        return parameter != null && parameter.trim().length() > 0;
     }
-	
-	public Map<String, String> toSingleParamMap(HttpServletRequest servletRequest){
+
+	public Map<String, String> requestParameters(HttpServletRequest servletRequest){
 		Enumeration<String> parameterNames = servletRequest.getParameterNames();
-		Map<String, String> params = new HashMap<String, String>();		
+		Map<String, String> params = new HashMap<>();
 		while (parameterNames.hasMoreElements()) {
-			String param = (String) parameterNames.nextElement();
+			String param = parameterNames.nextElement();
 			String value = servletRequest.getParameter(param);
 			params.put(param, value);
 		}

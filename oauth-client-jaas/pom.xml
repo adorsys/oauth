@@ -35,16 +35,6 @@
 			<artifactId>jboss-servlet-api_3.0_spec</artifactId>
 			<scope>provided</scope>
 		</dependency>
-		<!-- 
-		<dependency>
-			<groupId>org.jboss.metadata</groupId>
-			<artifactId>jboss-metadata-common</artifactId>
-		</dependency>
-		 -->
-		<dependency>
-			<groupId>org.picketbox</groupId>
-			<artifactId>picketbox</artifactId>
-		</dependency>
 		<dependency>
 			<groupId>org.jboss.as</groupId>
 			<artifactId>jboss-as-web</artifactId>
@@ -103,7 +93,7 @@
 
 	<profiles>
 		<profile>
-			<id>local</id>
+			<id>oauth-test</id>
 			<build>
 				<plugins>
 					<plugin>
@@ -115,7 +105,7 @@
 								<id>copy-installed</id>
 								<phase>install</phase>
 								<goals>
-									<goal>unpack</goal>
+									<goal>copy</goal>
 								</goals>
 								<configuration>
 									<artifactItems>
@@ -123,10 +113,10 @@
 											<groupId>${project.groupId}</groupId>
 											<artifactId>${project.artifactId}</artifactId>
 											<version>${project.version}</version>
-											<type>zip</type>
 										</artifactItem>
 									</artifactItems>
-									<outputDirectory>../oauth-test/target/jboss-eap-6.4/modules</outputDirectory>
+									<stripVersion>true</stripVersion>
+									<outputDirectory>../oauth-test/target/jboss-eap-6.4/modules/oauth/main</outputDirectory>
 								</configuration>
 							</execution>
 						</executions>

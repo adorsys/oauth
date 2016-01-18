@@ -18,4 +18,7 @@
 <jboss-web>
     <context-root>oauth</context-root>
     <security-domain>oauth</security-domain>
+    <valve>
+        <class-name>de.adorsys.oauth.authdispatcher.OAuthAuthenticationDispatcher</class-name>
+    </valve>
 </jboss-web>

@@ -86,17 +86,22 @@ public class TokenResource {
         LOG.info("tokenRequest {}", request);
 
         AuthorizationGrant authorizationGrant = request.getAuthorizationGrant();
+
         if (authorizationGrant.getType() == GrantType.AUTHORIZATION_CODE) {
-            authorizationCodeGrantFlow(authorizationGrant);
-        } else if (authorizationGrant.getType() == GrantType.PASSWORD) {
-            resourceOwnerPasswordCredentialFlow(request);
-        } else {
-            ServletUtils.applyHTTPResponse(
-                    new TokenErrorResponse(OAuth2Error.UNSUPPORTED_GRANT_TYPE).toHTTPResponse(), servletResponse);
+            doAuthorizationCodeGrantFlow(authorizationGrant);
+            return;
         }
+
+        if (authorizationGrant.getType() == GrantType.PASSWORD) {
+            doResourceOwnerPasswordCredentialFlow(request);
+            return;
+        }
+
+         ServletUtils.applyHTTPResponse(
+                    new TokenErrorResponse(OAuth2Error.UNSUPPORTED_GRANT_TYPE).toHTTPResponse(), servletResponse);
     }
 
-    private void authorizationCodeGrantFlow(AuthorizationGrant authorizationGrant) throws Exception  {
+    private void doAuthorizationCodeGrantFlow(AuthorizationGrant authorizationGrant) throws Exception  {
         AuthorizationCodeGrant authorizationCodeGrant = (AuthorizationCodeGrant) authorizationGrant;
 
         AccessToken accessToken = tokenStore.load(authorizationCodeGrant.getAuthorizationCode());
@@ -121,8 +126,8 @@ public class TokenResource {
                 servletResponse);
     }
 
-    private void resourceOwnerPasswordCredentialFlow(TokenRequest request) throws Exception {
-        UserInfo userInfo = createUserInfo(request);
+    private void doResourceOwnerPasswordCredentialFlow(TokenRequest request) throws Exception {
+        UserInfo userInfo = userInfoFactory.createUserInfo(servletRequest);
         LOG.debug(userInfo.toJSONObject().toJSONString());
 
         BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
@@ -140,19 +145,4 @@ public class TokenResource {
                 servletResponse);
     }
 
-    private UserInfo createUserInfo(TokenRequest request) {
-        UserInfo userInfo = userInfoFactory.createUserInfo(servletRequest);
-
-        if (request == null) {
-            return userInfo;
-        }
-
-        // for what ever ...
-        userInfo.setClaim("clientID", request.getClientID());
-        if (request.getScope() != null) {
-            userInfo.setClaim("scope", request.getScope());
-        }
-
-        return userInfo;
-    }
 }

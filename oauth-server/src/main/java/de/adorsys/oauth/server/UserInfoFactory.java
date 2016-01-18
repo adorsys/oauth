@@ -21,13 +21,17 @@ import org.jboss.security.SecurityContext;
 import org.jboss.security.SecurityContextAssociation;
 import org.jboss.security.SubjectInfo;
 import org.jboss.security.identity.Role;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import java.security.Principal;
+import java.security.acl.Group;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * UserInfoFactory - depends on JBoss
@@ -35,11 +39,10 @@ import java.util.List;
 @Dependent
 public class UserInfoFactory {
 
-    @Inject
-    private Principal principal;
+    private static final Logger LOG = LoggerFactory.getLogger(UserInfoFactory.class);
 
     @Inject
-    private CustomClaim customClaim;
+    private Principal principal;
 
     /**
      * createUserInfo
@@ -66,8 +69,55 @@ public class UserInfoFactory {
         }
 
         // add non role groups as claim to userinfo
-        customClaim.addCustomGroups(userInfo, subjectInfo.getAuthenticatedSubject().getPrincipals());
+        addCustomGroups(userInfo, subjectInfo.getAuthenticatedSubject().getPrincipals());
 
         return userInfo;
     }
+
+    public void addCustomGroups(UserInfo userInfo, Set<Principal> principals) {
+        if (userInfo == null || principals == null) {
+            LOG.error("Userinfo or Principals null");
+            return;
+        }
+
+        List<Group> unknownGroups = getUnknownGroups(principals);
+
+        for (Group prince : unknownGroups) {
+            Principal other = prince.members().nextElement();
+            userInfo.setClaim(prince.getName(), other.toString()); //json prince
+        }
+    }
+
+    /**
+     * Filter all known role groups
+     *
+     * @param principals
+     * @return unknown groups
+     */
+    private List<Group> getUnknownGroups(Set<Principal> principals) {
+        List<Group> groups = new ArrayList<>();
+
+        for (Principal principal : principals) {
+            if (! (principal instanceof Group) ) {
+                continue;
+            }
+
+            switch (principal.getClass().getName()) {
+                case "org.glassfish.security.common.Group": // GlassFish
+                case "org.apache.geronimo.security.realm.providers.GeronimoGroupPrincipal": // Geronimo
+                case "weblogic.security.principal.WLSGroupImpl": // WebLogic
+                    continue;
+                default: //  org.jboss.security.SimpleGroup or similar
+                    if (principal.getName().equals("Roles") || principal.getName().equals("CallerPrincipal")) {
+                        continue;
+                    }
+            }
+
+            // unkown Group, add to custom groups
+            groups.add((Group) principal);
+        }
+
+        return groups;
+    }
+
 }

@@ -79,34 +79,19 @@
 
     <!-- test dependencies -->
     <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient-cache</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>javax.mail</groupId>
-      <artifactId>mail</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.junit</groupId>
-      <artifactId>arquillian-junit-container</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
     </dependency>
+    <dependency>
+      <groupId>javax.mail</groupId>
+      <artifactId>mail</artifactId>
+      <scope>provided</scope>
+    </dependency>
 
-	<dependency>
-		<groupId>javax.mail</groupId>
-		<artifactId>mail</artifactId>
-		<scope>provided</scope>
-	</dependency>
-    
   </dependencies>
 
   <build>
@@ -128,104 +113,32 @@
 
   <profiles>
     <profile>
-      <id>jbossas-embedded</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.jboss.as</groupId>
-          <artifactId>jboss-as-arquillian-container-managed</artifactId>
-          <version>${version.arquillian.container}</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.jboss.arquillian.protocol</groupId>
-          <artifactId>arquillian-protocol-servlet</artifactId>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.jboss.as</groupId>
-          <artifactId>jboss-eap</artifactId>
-          <version>${version.jboss.as}</version>
-          <type>zip</type>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.jboss.logging</groupId>
-          <artifactId>jboss-logging</artifactId>
-          <version>3.2.1.Final</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
+      <id>oauth-test</id>
       <build>
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-dependency-plugin</artifactId>
+            <version>2.10</version>
             <executions>
               <execution>
-                <id>install-jboss</id>
-                <phase>process-sources</phase>
+                <id>copy-installed</id>
+                <phase>install</phase>
                 <goals>
-                  <goal>unpack-dependencies</goal>
+                  <goal>copy</goal>
                 </goals>
                 <configuration>
-                  <excludeTransitive>true</excludeTransitive>
-                  <includeArtifactIds>jboss-eap</includeArtifactIds>
-                  <includeGroupIds>org.jboss.as</includeGroupIds>
-                  <outputDirectory>target</outputDirectory>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>${project.groupId}</groupId>
+                      <artifactId>${project.artifactId}</artifactId>
+                      <version>${project.version}</version>
+                    </artifactItem>
+                  </artifactItems>
+                  <stripVersion>true</stripVersion>
+                  <outputDirectory>../oauth-test/target/jboss-eap-6.4/standalone/deployments/idp.war/</outputDirectory>
                 </configuration>
               </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <artifactId>maven-resources-plugin</artifactId>
-            <version>2.6</version>
-            <executions>
-              <execution>
-                <id>copy-standalone-test</id>
-                <phase>process-sources</phase>
-                <goals>
-                  <goal>copy-resources</goal>
-                </goals>
-                <configuration>
-                  <outputDirectory>target/jboss-eap-${version.jboss.as}/standalone/configuration</outputDirectory>
-                  <resources>
-                    <resource>
-                      <directory>src/test/resources</directory>
-                      <includes>
-                        <include>standalone-test.xml</include>
-                        <include>test-users.properties</include>
-                        <include>test-roles.properties</include>
-                        <include>mgmt-users.properties</include>
-                        <include>mgmt-groups.properties</include>
-                      </includes>
-                    </resource>
-                  </resources>
-                </configuration>
-              </execution>
-              <!-- 
-              <execution>
-                <id>copy-standalone-conf</id>
-                <phase>process-sources</phase>
-                <goals>
-                  <goal>copy-resources</goal>
-                </goals>
-                <configuration>
-                  <overwrite>true</overwrite>
-                  <outputDirectory>target/jboss-eap-${version.jboss.as}/bin</outputDirectory>
-                  <resources>
-                    <resource>
-                      <directory>src/test/resources</directory>
-                      <includes>
-                        <include>standalone.conf</include>
-                      </includes>
-                    </resource>
-                  </resources>
-                </configuration>
-              </execution>
-               -->
             </executions>
           </plugin>
         </plugins>

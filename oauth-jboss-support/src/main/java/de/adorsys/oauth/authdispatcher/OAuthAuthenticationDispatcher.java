@@ -31,6 +31,8 @@ import org.apache.catalina.Valve;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
 import org.apache.catalina.valves.ValveBase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.management.ObjectName;
 import javax.security.jacc.PolicyContext;
@@ -53,6 +55,8 @@ import java.util.ServiceLoader;
  *
  */
 public class OAuthAuthenticationDispatcher extends ValveBase implements PolicyContextHandler {
+
+	private static final Logger LOG = LoggerFactory.getLogger(OAuthAuthenticationDispatcher.class);
 
 	private List<AuthenticatorMatcher> matchers;
 
@@ -77,7 +81,7 @@ public class OAuthAuthenticationDispatcher extends ValveBase implements PolicyCo
 			try {
 				PolicyContext.registerHandler(key, this, false);
 			} catch (Exception e) {
-				//
+				LOG.debug(e.getClass().getSimpleName() + " " + e.getMessage());
 			}
 		}
 	}
@@ -143,15 +147,22 @@ public class OAuthAuthenticationDispatcher extends ValveBase implements PolicyCo
 				.store(AuthorizationRequest.class.getName(), authorizationRequest)
 				.store(TokenRequest.class.getName(), resolveTokenRequest(httpRequest));
 
+		String authenticator = null;
 		try {
 			for (AuthenticatorMatcher authenticatorMatcher : matchers) {
 				ValveBase valveBase = authenticatorMatcher.match(request, authorizationRequest);
 				if (valveBase != null) {
+					authenticator = authenticatorMatcher.getClass().getSimpleName();
 					valveBase.invoke(request, response);
+					LOG.debug("use {}, principal = {}", authenticator, request.getPrincipal());
 					return;
 				}
 			}
-		} finally {
+			LOG.debug("no authentificator found for {}", request.getDecodedRequestURI());
+		} catch (Exception e) {
+			LOG.error("error during calling {}: {} {}", authenticator, e.getClass().getSimpleName(), e.getMessage());
+		}
+		finally {
 			for (String key : SUPPORTED_CONTEXT) {
 				contextData.get().remove(key);
 			}
@@ -175,7 +186,7 @@ public class OAuthAuthenticationDispatcher extends ValveBase implements PolicyCo
 				list.add(matcher);
 			}
 		} catch (Exception e) {
-			// ignore ..
+			LOG.error(e.getClass().getSimpleName() + " " + e.getMessage());
 		}
 
 		if (list.isEmpty()) {
