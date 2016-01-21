@@ -70,7 +70,8 @@ public class TestResourceOwnerPasswordFlow {
 
         response.then().statusCode(200);
         System.out.println(response.asString());
+        String accessToken = response.jsonPath().getString("access_token");
 
-      //  SampleRequest.verify(accessToken);
+        SampleRequest.verify(accessToken);
     }
 }

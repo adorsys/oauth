@@ -80,7 +80,7 @@ public class OAuthLoginModule implements LoginModule {
             UserInfo userInfo = (UserInfo) request.getAttribute(UserInfo.class.getName());
             if (userInfo == null) {
                 //no userinfo - no oauth login
-                LOG.info("no userinfo available as request parameter");
+                LOG.trace("no userinfo available as request parameter");
                 return false;
             }
 

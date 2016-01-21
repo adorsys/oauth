@@ -39,7 +39,6 @@ import static org.junit.Assert.assertTrue;
  * TestImplicitFlow
  */
 @RunWith(Arquillian.class)
-@org.junit.Ignore
 public class TestImplicitFlow {
 
 

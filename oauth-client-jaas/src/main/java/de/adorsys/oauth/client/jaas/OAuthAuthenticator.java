@@ -249,7 +249,7 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 		}
 
 		if (userInfo == null) {
-			LOG.info("no userInfo available for {}", accessToken.getValue());
+			LOG.trace("no userInfo available for {}", accessToken.getValue());
 			return false;
 		}
 
@@ -326,5 +326,9 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 
 	public void setClientId(String clientId) {
 		this.clientId = new ClientID(clientId);
+	}
+
+	public void setSupportGuest(boolean supportGuest) {
+		this.supportGuest = supportGuest;
 	}
 }
