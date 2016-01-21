@@ -19,6 +19,13 @@
     <context-root>oauth</context-root>
     <security-domain>oauth</security-domain>
     <valve>
+        <class-name>de.adorsys.oauth.server.ResourceOwnerPasswordCredentialFlowValve</class-name>
+        <param>
+            <param-name>clientSecurityDomain</param-name>
+            <param-value>client-auth</param-value>
+        </param>
+    </valve>
+    <valve>
         <class-name>de.adorsys.oauth.authdispatcher.OAuthAuthenticationDispatcher</class-name>
     </valve>
 </jboss-web>

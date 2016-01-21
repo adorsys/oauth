@@ -290,8 +290,16 @@
                 </security-domain>
                 <security-domain name="oauth-client" cache-type="default">
                   <authentication>
-                    <login-module module="oauth" code="de.adorsys.oauth.client.jaas.OAuthLoginModule" flag="required" />
+                      <login-module module="oauth" code="de.adorsys.oauth.client.jaas.OAuthLoginModule" flag="required" />
                   </authentication>
+                </security-domain>
+                <security-domain name="client-auth" cache-type="default">
+                    <authentication>
+                        <login-module code="org.jboss.security.auth.spi.UsersRolesLoginModule" flag="sufficient">
+                            <module-option name="usersProperties" value="${jboss.server.config.dir}/users.properties"/>
+                            <module-option name="rolesProperties" value="${jboss.server.config.dir}/roles.properties"/>
+                        </login-module>
+                    </authentication>
                 </security-domain>
             </security-domains>
         </subsystem>
@@ -310,6 +318,7 @@
             <virtual-server name="default-host" enable-welcome-root="true">
                 <alias name="localhost"/>
             </virtual-server>
+
         </subsystem>
         <subsystem xmlns="urn:jboss:domain:webservices:1.2">
             <modify-wsdl-address>true</modify-wsdl-address>

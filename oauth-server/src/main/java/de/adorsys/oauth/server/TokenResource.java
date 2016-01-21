@@ -132,7 +132,7 @@ public class TokenResource {
 
         BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
 
-        LOG.info("impliesTokenFlow {}", accessToken.toJSONString());
+        LOG.info("resourceOwnerPasswordCredentialFlow {}", accessToken.toJSONString());
 
         tokenStore.add(accessToken, userInfo);
         RefreshToken refreshToken = new RefreshToken();

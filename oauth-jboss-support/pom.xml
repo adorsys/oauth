@@ -117,7 +117,7 @@
                     </artifactItem>
                   </artifactItems>
                   <stripVersion>true</stripVersion>
-                  <outputDirectory>../oauth-test/target/jboss-eap-6.4/standalone/deployments/idp.war/</outputDirectory>
+                  <outputDirectory>../oauth-test/target/jboss-eap-6.4/standalone/deployments/idp.war/WEB-INF/lib</outputDirectory>
                 </configuration>
               </execution>
             </executions>

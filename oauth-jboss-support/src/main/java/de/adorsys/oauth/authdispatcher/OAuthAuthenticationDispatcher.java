@@ -132,6 +132,7 @@ public class OAuthAuthenticationDispatcher extends ValveBase implements PolicyCo
 		Principal principal = request.getPrincipal();
 		if (principal != null) {
 			getNext().invoke(request, response);
+			return;
 		}
 
 		request.setCharacterEncoding("utf-8");
@@ -141,11 +142,13 @@ public class OAuthAuthenticationDispatcher extends ValveBase implements PolicyCo
 
 		HTTPRequest httpRequest = FixedServletUtils.createHTTPRequest(request);
 		AuthorizationRequest authorizationRequest = resolveAuthorizationRequest(httpRequest);
+		TokenRequest tokenRequest = resolveTokenRequest(httpRequest);
+
 
 		store(HttpServletRequest.class.getName(), request)
 				.store(HttpServletResponse.class.getName(), response)
 				.store(AuthorizationRequest.class.getName(), authorizationRequest)
-				.store(TokenRequest.class.getName(), resolveTokenRequest(httpRequest));
+				.store(TokenRequest.class.getName(), tokenRequest);
 
 		String authenticator = null;
 		try {
