@@ -48,7 +48,11 @@ public class TestAuthCodeFlow {
                 .addAsWebInfResource("beans.xml")
                 .addAsWebInfResource("jboss-web.xml")
                 .addAsWebInfResource("web.xml")
+                .addAsWebInfResource("jboss-deployment-structure.xml")
                 ;
+
+//        System.out.println(a.toString(true));
+//        return a;
     }
 
     @Test @RunAsClient
@@ -75,8 +79,8 @@ public class TestAuthCodeFlow {
                 .get(location)
                 ;
 
-        response.then().statusCode(401);
-
+        int status = response.getStatusCode();
+        assertTrue(status == 401 || status == 403);
         response = given()
                 //.log().all()
                 .config(config)

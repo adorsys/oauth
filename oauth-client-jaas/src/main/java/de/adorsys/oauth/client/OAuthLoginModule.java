@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.adorsys.oauth.client.jaas;
+package de.adorsys.oauth.client;
 
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 

@@ -25,6 +25,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Map;
 
 
 /**
@@ -39,6 +41,27 @@ public class OAuthProtocol {
     private ClientID clientId;
     private ClientSecretBasic clientSecretBasic;
     private String clientSecretValue;
+
+    public static OAuthProtocol from(Map<String, String> properties) {
+        OAuthProtocol oauthProtocol = new OAuthProtocol();
+        oauthProtocol.setAuthEndpoint(properties.get("authEndpoint"));
+        oauthProtocol.setTokenEndpoint(properties.get("tokenEndpoint"));
+        oauthProtocol.setClientId(properties.get("clientId"));
+        oauthProtocol.setClientSecretValue(properties.get("clientSecret"));
+        return oauthProtocol.initialize();
+    }
+
+    /**
+     * extractURI
+     */
+    public URI extractURI(HttpServletRequest request) {
+        try {
+            String query = request.getQueryString() == null ? "" : "?" + request.getQueryString();
+            return new URL(request.getScheme(), request.getServerName(), request.getServerPort(), request.getRequestURI() + query).toURI();
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
     /**
      * OAuthProtocol builder
@@ -67,7 +90,7 @@ public class OAuthProtocol {
         this.clientSecretValue = clientSecretValue;
     }
 
-    public void initialize() {
+    public OAuthProtocol initialize() {
         if (authEndpoint == null || tokenEndpoint == null ||  clientId == null) {
             throw new IllegalStateException("Endpoint/ClientId missing");
         }
@@ -75,6 +98,8 @@ public class OAuthProtocol {
         if (clientSecretValue != null) {
             clientSecretBasic = new ClientSecretBasic(clientId, new Secret(clientSecretValue));
         }
+
+        return this;
     }
 
 
@@ -115,21 +140,20 @@ public class OAuthProtocol {
     /**
      * ask the authEndpoint for an authorization code
      */
-    public void doAuthorizationRequest(HttpServletResponse response, URI requestURI) throws IOException {
+    public void doAuthorizationRequest(HttpServletResponse response, URI requestURI)  {
+        AuthorizationRequest authorizationRequest = new AuthorizationRequest.Builder(new ResponseType(Value.CODE), clientId).endpointURI(authEndpoint)
+                .redirectionURI(requestURI).build();
+
+        String redirect = String.format("%s?%s", authorizationRequest.toHTTPRequest().getURL(), authorizationRequest.toHTTPRequest().getQuery());
+
+        LOG.info("redirect to {}", redirect);
+
         try {
-            AuthorizationRequest authorizationRequest = new AuthorizationRequest.Builder(new ResponseType(Value.CODE), clientId).endpointURI(authEndpoint)
-                    .redirectionURI(requestURI).build();
-
-            String redirect = String.format("%s?%s", authorizationRequest.toHTTPRequest().getURL(), authorizationRequest.toHTTPRequest().getQuery());
-
-            LOG.info("redirect to {}", redirect);
-
             response.sendRedirect(redirect);
-
-        } catch (Exception e) {
-            LOG.error(e.getClass().getSimpleName() + " " + e.getMessage());
-            throw new IOException(e);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
         }
+
     }
 
     /**

@@ -77,6 +77,9 @@
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
+      <properties>
+        <jboss.home>target/jboss-eap-${version.jboss.as}</jboss.home>
+      </properties>
       <dependencies>
         <dependency>
           <groupId>org.jboss.as</groupId>
@@ -118,6 +121,11 @@
           <artifactId>oauth-server</artifactId>
           <version>${project.version}</version>
         </dependency>
+        <dependency>
+          <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
+          <version>1.10</version>
+        </dependency>
       </dependencies>
       <build>
         <plugins>
@@ -151,7 +159,7 @@
                   </excludeGroupIds>
                   <excludeTransitive>false</excludeTransitive>
                   <stripVersion>true</stripVersion>
-                  <outputDirectory>target/jboss-eap-${version.jboss.as}/standalone/deployments/idp.war/WEB-INF/lib</outputDirectory>
+                  <outputDirectory>${jboss.home}/standalone/deployments/idp.war/WEB-INF/lib</outputDirectory>
                   <includeScope>compile</includeScope>
                   <silent>true</silent>
                   <prependGroupId>false</prependGroupId>
@@ -166,7 +174,7 @@
                 <configuration>
                   <excludeTransitive>false</excludeTransitive>
                   <includeArtifactIds>oauth-client-jaas</includeArtifactIds>
-                  <outputDirectory>target/jboss-eap-${version.jboss.as}/modules</outputDirectory>
+                  <outputDirectory>${jboss.home}/modules</outputDirectory>
                 </configuration>
               </execution>
             </executions>
@@ -183,7 +191,7 @@
                 </goals>
                 <configuration>
                   <overwrite>true</overwrite>
-                  <outputDirectory>target/jboss-eap-${version.jboss.as}/standalone/deployments</outputDirectory>
+                  <outputDirectory>${jboss.home}/standalone/deployments</outputDirectory>
                   <resources>
                     <resource>
                       <directory>src/test/resources/deployments</directory>
@@ -198,7 +206,7 @@
                   <goal>copy-resources</goal>
                 </goals>
                 <configuration>
-                  <outputDirectory>target/jboss-eap-${version.jboss.as}/standalone/configuration</outputDirectory>
+                  <outputDirectory>${jboss.home}/standalone/configuration</outputDirectory>
                   <resources>
                     <resource>
                       <directory>src/test/resources</directory>
@@ -219,7 +227,7 @@
                 </goals>
                 <configuration>
                   <overwrite>true</overwrite>
-                  <outputDirectory>target/jboss-eap-${version.jboss.as}/bin</outputDirectory>
+                  <outputDirectory>${jboss.home}/bin</outputDirectory>
                   <resources>
                     <resource>
                       <directory>src/test/resources</directory>
@@ -237,13 +245,214 @@
     </profile>
 
     <profile>
+      <id>wildfly</id>
+      <properties>
+        <wildfly.home>target/wildfly-${version.wildfly}</wildfly.home>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>org.wildfly</groupId>
+          <artifactId>wildfly-dist</artifactId>
+          <version>8.2.1.Final</version>
+          <type>zip</type>
+        </dependency>
+        <dependency>
+          <groupId>org.wildfly</groupId>
+          <artifactId>wildfly-arquillian-container-managed</artifactId>
+          <version>${version.wildfly}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.jboss.arquillian.protocol</groupId>
+          <artifactId>arquillian-protocol-servlet</artifactId>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.jboss.as</groupId>
+          <artifactId>jboss-eap</artifactId>
+          <version>${version.jboss.as}</version>
+          <type>zip</type>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>oauth-client-jaas</artifactId>
+          <version>${project.version}</version>
+          <type>tar.gz</type>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>oauth-tokenstore-jpa</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>oauth-wildfly-support</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>oauth-server</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+        <dependency>
+          <groupId>commons-codec</groupId>
+          <artifactId>commons-codec</artifactId>
+          <version>1.10</version>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>2.19.1</version>
+            <configuration>
+              <systemPropertyVariables>
+                <arquillian.launch>wildfly-managed</arquillian.launch>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>2.10</version>
+            <executions>
+              <execution>
+                <id>install-wildfly</id>
+                <phase>process-sources</phase>
+                <goals>
+                  <goal>unpack-dependencies</goal>
+                </goals>
+                <configuration>
+                  <excludeTransitive>false</excludeTransitive>
+                  <includeArtifactIds>wildfly-dist</includeArtifactIds>
+                  <outputDirectory>target</outputDirectory>
+                </configuration>
+              </execution>
+              <execution>
+                <id>install-oauth-server</id>
+                <phase>process-sources</phase>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+                <configuration>
+                  <excludeGroupIds>
+                    org.jboss.xnio,javax.inject,org.slf4j,javax.mail,org.jboss.metadata,org.jboss.spec.javax.annotation,org.jboss.spec.javax.servlet,org.jboss.logging,system,io.undertow,sun.jdk,org.wildfly
+                  </excludeGroupIds>
+                  <excludeTransitive>false</excludeTransitive>
+                  <prependGroupId>false</prependGroupId>
+                  <stripVersion>true</stripVersion>
+                  <outputDirectory>${wildfly.home}/standalone/deployments/idp.war/WEB-INF/lib</outputDirectory>
+                  <includeScope>compile</includeScope>
+                  <silent>true</silent>
+                </configuration>
+              </execution>
+              <execution>
+                <id>install-oauth-client</id>
+                <phase>process-sources</phase>
+                <goals>
+                  <goal>unpack-dependencies</goal>
+                </goals>
+                <configuration>
+                  <excludeTransitive>false</excludeTransitive>
+                  <includeArtifactIds>oauth-client-jaas</includeArtifactIds>
+                  <outputDirectory>${wildfly.home}/modules</outputDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-resources-plugin</artifactId>
+            <version>2.6</version>
+            <executions>
+              <execution>
+                <id>create-idp</id>
+                <phase>process-sources</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <overwrite>true</overwrite>
+                  <outputDirectory>${wildfly.home}/standalone/deployments</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>src/test/resources/deployments</directory>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+              <execution>
+                <id>copy-standalone-test</id>
+                <phase>process-sources</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <outputDirectory>${wildfly.home}/standalone/configuration</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>src/test/resources</directory>
+                      <includes>
+                        <include>standalone-wildfly.xml</include>
+                        <include>users.properties</include>
+                        <include>roles.properties</include>
+                      </includes>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+              <execution>
+                <id>copy-standalone-conf</id>
+                <phase>process-sources</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <overwrite>true</overwrite>
+                  <outputDirectory>${wildfly.home}/bin</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>src/test/resources</directory>
+                      <includes>
+                        <include>standalone.conf</include>
+                      </includes>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+              <execution>
+                <id>copy-wildfly-idp-web.xml</id>
+                <phase>process-sources</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <overwrite>true</overwrite>
+                  <outputDirectory>${wildfly.home}/standalone/deployments/idp.war/WEB-INF</outputDirectory>
+                  <overwrite>true</overwrite>
+                  <resources>
+                    <resource>
+                      <directory>src/test/resources/wildfly-idp</directory>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
       <id>local</id>
       <build>
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>2.10</version>
+            <version>2.19.1</version>
             <configuration>
               <skipTests>true</skipTests>
             </configuration>

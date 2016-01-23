@@ -3,7 +3,7 @@
   <security-domain>oauth-client</security-domain>
 
   <valve>
-    <class-name>de.adorsys.oauth.client.jaas.OAuthAuthenticator</class-name>
+    <class-name>de.adorsys.oauth.client.valve.OAuthAuthenticator</class-name>
     <module>oauth</module>
     <param>
       <param-name>authEndpoint</param-name>

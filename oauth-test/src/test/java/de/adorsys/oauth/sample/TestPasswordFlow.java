@@ -32,10 +32,10 @@ import static com.jayway.restassured.config.RedirectConfig.redirectConfig;
 import static com.jayway.restassured.config.RestAssuredConfig.newConfig;
 
 /**
- * TestImplicit
+ * TestPasswordFlow
  */
 @RunWith(Arquillian.class)
-public class TestResourceOwnerPasswordFlow {
+public class TestPasswordFlow {
 
 
     @Deployment
@@ -46,6 +46,7 @@ public class TestResourceOwnerPasswordFlow {
                 .addAsWebInfResource("beans.xml")
                 .addAsWebInfResource("jboss-web.xml")
                 .addAsWebInfResource("web.xml")
+                .addAsWebInfResource("jboss-deployment-structure.xml")
                 ;
     }
 

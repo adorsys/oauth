@@ -1,6 +1,5 @@
 package de.adorsys.oauth.client.protocol;
 
-import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
@@ -17,9 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
 
 /**
  * UserInfoResolver
@@ -32,6 +31,12 @@ public class UserInfoResolver {
 
     private CloseableHttpClient cachingHttpClient;
 
+    public static UserInfoResolver from(Map<String, String> properties) {
+        UserInfoResolver userInfoResolver = new UserInfoResolver();
+        userInfoResolver.setUserInfoEndpoint(properties.get("userInfoEndpoint"));
+        return userInfoResolver.initialize();
+    }
+
     public void setUserInfoEndpoint(String userInfoEndpoint) {
         try {
             this.userInfoEndpoint = new URI(userInfoEndpoint);
@@ -40,62 +45,54 @@ public class UserInfoResolver {
         }
     }
 
-    public void initialize() {
+    public UserInfoResolver initialize() {
 
         if (userInfoEndpoint == null) {
             throw new IllegalStateException("UserInfoEndpoint missing");
         }
 
         CacheConfig cacheConfig = CacheConfig.custom()
-                                        .setMaxCacheEntries(1000)
-                                        .setMaxObjectSize(8192)
-                                        .build();
+                .setMaxCacheEntries(1000)
+                .setMaxObjectSize(8192)
+                .build();
 
         RequestConfig requestConfig = RequestConfig.custom()
-                                        .setConnectTimeout(30000)
-                                        .setSocketTimeout(30000)
-                                        .build();
+                .setConnectTimeout(30000)
+                .setSocketTimeout(30000)
+                .build();
 
         cachingHttpClient = CachingHttpClients.custom()
-                                        .setCacheConfig(cacheConfig)
-                                        .setDefaultRequestConfig(requestConfig)
-                                        .build();
-
+                .setCacheConfig(cacheConfig)
+                .setDefaultRequestConfig(requestConfig)
+                .build();
+        return this;
     }
 
-    public UserInfo resolve(AccessToken accessToken) throws IOException {
-
-        HttpGet httpGet = new HttpGet(createURI(accessToken));
-
-        httpGet.setHeader("Authorization", new BearerAccessToken(accessToken.getValue()).toAuthorizationHeader());
-
-        HttpCacheContext context = HttpCacheContext.create();
-        CloseableHttpResponse userInfoResponse = cachingHttpClient.execute(httpGet, context);
-        LOG.debug("read userinfo {} {}", accessToken.getValue(), context.getCacheResponseStatus());
-
-        HttpEntity entity = userInfoResponse.getEntity();
-        if (entity==null){
-            LOG.info("no userInfo available for {}", accessToken.getValue());
-            return null;
-        }
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        entity.writeTo(baos);
+    public UserInfo resolve(AccessToken accessToken) {
 
         try {
+            URI userInfoRequest = new URI(String.format("%s?id=%s", userInfoEndpoint.toString(), accessToken.getValue()));
+            HttpGet httpGet = new HttpGet(userInfoRequest);
+
+            httpGet.setHeader("Authorization", new BearerAccessToken(accessToken.getValue()).toAuthorizationHeader());
+
+            HttpCacheContext context = HttpCacheContext.create();
+            CloseableHttpResponse userInfoResponse = cachingHttpClient.execute(httpGet, context);
+            LOG.debug("read userinfo {} {}", accessToken.getValue(), context.getCacheResponseStatus());
+
+            HttpEntity entity = userInfoResponse.getEntity();
+            if (entity==null){
+                LOG.info("no userInfo available for {}", accessToken.getValue());
+                return null;
+            }
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            entity.writeTo(baos);
+
             return UserInfo.parse(baos.toString());
-        } catch (ParseException e) {
-            throw new IOException(e);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
         }
-    }
-
-    private URI createURI(AccessToken accessToken) throws IOException {
-        try {
-            return new URI(String.format("%s?id=%s", userInfoEndpoint.toString(), accessToken.getValue()));
-        } catch (URISyntaxException e) {
-            throw new IOException(e);
-        }
-
     }
 
     @Override

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.adorsys.oauth.client.jaas;
+package de.adorsys.oauth.client.valve;
 
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
@@ -32,7 +32,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.security.Principal;
 
 /**
@@ -71,14 +70,7 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 			return true;
 		}
 
-		URI requestURI = null;
-		try {
-			String query = request.getQueryString() == null ? "" : "?" + request.getQueryString();
-			requestURI = new URL(request.getScheme(), request.getServerName(), request.getServerPort(), request.getDecodedRequestURI() + query).toURI();
-		} catch (Exception e) {
-			LOG.error("ups", e);
-		}
-
+		URI requestURI = oauthProtocol.extractURI(request);
 		LOG.debug("Request " + requestURI);
 
 		// 1. check for token
@@ -120,7 +112,7 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 	 * authenticate with accessToken
 	 */
 	@SuppressWarnings("unchecked")
-	private boolean authenticate(AccessToken accessToken, Request request, HttpServletResponse response) throws IOException {
+	private boolean authenticate(AccessToken accessToken, Request request, HttpServletResponse response)  {
 
 		if (accessToken == null) {
 			return false;

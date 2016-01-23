@@ -50,6 +50,7 @@ public class TestImplicitFlow {
                 .addAsWebInfResource("beans.xml")
                 .addAsWebInfResource("jboss-web.xml")
                 .addAsWebInfResource("web.xml")
+                .addAsWebInfResource("jboss-deployment-structure.xml")
                 ;
     }
 

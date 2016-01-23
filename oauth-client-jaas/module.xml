@@ -45,5 +45,8 @@
     <module name="org.jboss.weld.api" />
     <module name="org.jboss.weld.core" />
     <module name="org.picketbox" />
+    <!-- optional modules for wildfly -->
+    <module name="io.undertow.core" optional="true" />
+    <module name="io.undertow.servlet" optional="true" />
   </dependencies>
 </module>
