@@ -1,4 +1,4 @@
-package de.adorsys.oauth.undertow;
+package de.adorsys.oauth.server;
 
 import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.GrantType;
@@ -35,7 +35,7 @@ import io.undertow.util.AttachmentKey;
  * PasswordCredentialFlowAuthenticatorMatcher
  */
 @SuppressWarnings("unused")
-public class PasswordFlowAuthenticatorMatcher implements AuthenicatorMatcher {
+public class PasswordFlowAuthenticatorMatcher implements AuthenticatorMatcher {
 
     private static final Logger LOG = LoggerFactory.getLogger(PasswordFlowAuthenticatorMatcher.class);
 

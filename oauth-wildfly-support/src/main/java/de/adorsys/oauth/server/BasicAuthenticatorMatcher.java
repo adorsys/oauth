@@ -1,4 +1,4 @@
-package de.adorsys.oauth.undertow;
+package de.adorsys.oauth.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +17,7 @@ import io.undertow.server.HttpServerExchange;
  * PasswordCredentialFlowAuthenticatorMatcher
  */
 @SuppressWarnings("unused")
-public class BasicAuthenticatorMatcher implements AuthenicatorMatcher {
+public class BasicAuthenticatorMatcher implements AuthenticatorMatcher {
 
     private static final Logger LOG = LoggerFactory.getLogger(BasicAuthenticatorMatcher.class);
 

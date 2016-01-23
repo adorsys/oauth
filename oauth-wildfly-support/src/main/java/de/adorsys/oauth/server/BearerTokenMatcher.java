@@ -1,4 +1,4 @@
-package de.adorsys.oauth.undertow;
+package de.adorsys.oauth.server;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -9,7 +9,7 @@ import io.undertow.server.HttpServerExchange;
 /**
  * BearerTokenMatcher
  */
-public class BearerTokenMatcher implements AuthenicatorMatcher {
+public class BearerTokenMatcher implements AuthenticatorMatcher {
 
     @Override
     public void initialize(ServletContext servletContext) {

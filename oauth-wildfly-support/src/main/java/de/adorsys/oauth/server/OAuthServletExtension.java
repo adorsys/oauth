@@ -1,4 +1,4 @@
-package de.adorsys.oauth.undertow;
+package de.adorsys.oauth.server;
 
 import javax.servlet.ServletContext;
 

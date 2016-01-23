@@ -1,4 +1,4 @@
-package de.adorsys.oauth.undertow;
+package de.adorsys.oauth.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +25,7 @@ public class DelegateAuthenticationMechanism implements AuthenticationMechanism 
 
     private static final AttachmentKey<AuthenticationMechanism> AUTHENTICATION_MECHANISM_ATTACHMENT_KEY = AttachmentKey.create(AuthenticationMechanism.class);
 
-    private List<AuthenicatorMatcher> authenticatioMatchers;
+    private List<AuthenticatorMatcher> authenticatioMatchers;
 
     public DelegateAuthenticationMechanism(ServletContext servletContext) {
         authenticatioMatchers = new ArrayList<>();
@@ -34,7 +34,7 @@ public class DelegateAuthenticationMechanism implements AuthenticationMechanism 
         authenticatioMatchers.add(new BasicAuthenticatorMatcher());
         authenticatioMatchers.add(new BearerTokenMatcher());
 
-        for (AuthenicatorMatcher authenticatioMatcher : authenticatioMatchers) {
+        for (AuthenticatorMatcher authenticatioMatcher : authenticatioMatchers) {
             authenticatioMatcher.initialize(servletContext);
         }
     }
@@ -45,7 +45,7 @@ public class DelegateAuthenticationMechanism implements AuthenticationMechanism 
         ServletRequestContext servletRequestContext = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
         HttpServletRequest request = servletRequestContext.getOriginalRequest();
 
-        for (AuthenicatorMatcher authenicatorMatcher : authenticatioMatchers) {
+        for (AuthenticatorMatcher authenicatorMatcher : authenticatioMatchers) {
             if (authenicatorMatcher.match(exchange, request)) {
                 LOG.debug("use {}", authenicatorMatcher.getClass().getSimpleName());
                 exchange.putAttachment(AUTHENTICATION_MECHANISM_ATTACHMENT_KEY, authenicatorMatcher);
