@@ -47,6 +47,11 @@
     <version.jboss.jacc-api_1.4_spec>1.0.3.Final</version.jboss.jacc-api_1.4_spec>
     <version.slf4j>1.7.7</version.slf4j>
     <version.junit>4.11</version.junit>
+
+    <!-- wildfly integration : we use an hybrid approach ... -->
+    <version.wildfly>8.2.1.Final</version.wildfly>
+    <version.undertow>1.1.8.Final</version.undertow>
+
   </properties>
   <scm>
     <connection>scm:git@github.com:adorsys/oauth.git</connection>
@@ -207,6 +212,18 @@
         <artifactId>slf4j-simple</artifactId>
         <version>${version.slf4j}</version>
         <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.undertow</groupId>
+        <artifactId>undertow-core</artifactId>
+        <version>${version.undertow}</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.undertow</groupId>
+        <artifactId>undertow-servlet</artifactId>
+        <version>${version.undertow}</version>
+        <scope>provided</scope>
       </dependency>
     </dependencies>
 

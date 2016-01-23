@@ -15,41 +15,21 @@
  */
 package de.adorsys.oauth.client.jaas;
 
-import com.nimbusds.oauth2.sdk.AccessTokenResponse;
-import com.nimbusds.oauth2.sdk.AuthorizationCode;
-import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
-import com.nimbusds.oauth2.sdk.AuthorizationRequest;
-import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse;
-import com.nimbusds.oauth2.sdk.ResponseType;
-import com.nimbusds.oauth2.sdk.ResponseType.Value;
-import com.nimbusds.oauth2.sdk.TokenRequest;
-import com.nimbusds.oauth2.sdk.auth.ClientSecretBasic;
-import com.nimbusds.oauth2.sdk.auth.Secret;
-import com.nimbusds.oauth2.sdk.http.HTTPResponse;
-import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
-import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
+
+import de.adorsys.oauth.client.protocol.OAuthProtocol;
+import de.adorsys.oauth.client.protocol.UserInfoResolver;
 
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.authenticator.AuthenticatorBase;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.deploy.LoginConfig;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.cache.HttpCacheContext;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.cache.CacheConfig;
-import org.apache.http.impl.client.cache.CachingHttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletResponse;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -63,27 +43,22 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 
 	private static final Logger LOG = LoggerFactory.getLogger(OAuthAuthenticator.class);
 
-	private URI authEndpoint;
-	private URI tokenEndpoint;
-	private URI userInfoEndpoint;
-
 	private boolean supportHttpSession;
 
 	private boolean supportAuthCode;
 
 	private boolean supportGuest;
 
-	private CloseableHttpClient cachingHttpClient;
-	private String clientSecretValue;
+	private OAuthProtocol oauthProtocol;
 
-	private ClientID clientId;
-
-	private ClientSecretBasic clientSecretBasic;
+	private UserInfoResolver userInfoResolver;
 
 	/**
 	 * Initializing
 	 */
 	public OAuthAuthenticator() {
+		oauthProtocol = new OAuthProtocol();
+		userInfoResolver = new UserInfoResolver();
 		// authcode is default enabled
 		supportAuthCode = true;
 	}
@@ -107,7 +82,7 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 		LOG.debug("Request " + requestURI);
 
 		// 1. check for token
-		AccessToken accessToken = resolveAccessToken(request, requestURI);
+		AccessToken accessToken = oauthProtocol.resolveAccessToken(request);
 
 		// 1.1 kein accessToken and guest allowed
 		if (accessToken == null && supportGuest) {
@@ -121,133 +96,39 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 			return true;
 		}
 
-		// return 401 if authorization grant flow disallowed
+		// return 401 if AuthorizationCodeFlow disallowed
 		if (!supportAuthCode) {
 			response.setStatus(401);
 			return false;
 		}
 
-		// 2. check for auth_grant
-		AuthorizationCode authorizationCode = resolveAuthorizationCode(request, requestURI);
-		if (authorizationCode != null) {
-            AccessTokenResponse accessTokenResponse = handleAuthorization(authorizationCode, requestURI, response);
-            accessToken = accessTokenResponse != null &&  accessTokenResponse.getTokens() != null ? accessTokenResponse.getTokens().getAccessToken() : null;
-
-            // authenticate and store bearer token in session
-            if (accessToken != null && authenticate(accessToken, request, response)) {
-                return true;
-            }
+		// 2. run AuthorizationCodeFlow
+		accessToken = oauthProtocol.runAuthorizationCodeFlow(requestURI);
+        if (authenticate(accessToken, request, response)) {
+			return true;
 		}
 
-		// 3. redirect to authEndpoint
-		try {
-			AuthorizationRequest authorizationRequest = new AuthorizationRequest.Builder(new ResponseType(Value.CODE), clientId).endpointURI(authEndpoint)
-					.redirectionURI(requestURI).build();
-
-			String redirect = String.format("%s?%s", authorizationRequest.toHTTPRequest().getURL(), authorizationRequest.toHTTPRequest().getQuery());
-
-			LOG.info("redirect to {}", redirect);
-
-			response.sendRedirect(redirect);
-
-		} catch (Exception e) {
-			LOG.error(e.getClass().getSimpleName() + " " + e.getMessage());
-			throw new IOException(e);
-		}
+		// 3. redirect to authEndpoint to gain authCode
+		oauthProtocol.doAuthorizationRequest(response, requestURI);
 
 		return false;
 	}
 
-	/**
-	 * handleAuthorization - ask tokenEndpoint for access token
-	 */
-	private AccessTokenResponse  handleAuthorization(AuthorizationCode authorizationCode, URI redirect, HttpServletResponse response) {
 
-		TokenRequest tokenRequest = clientSecretBasic == null ?
-				new TokenRequest(tokenEndpoint, clientId, new AuthorizationCodeGrant(authorizationCode, redirect))
-				: new TokenRequest(tokenEndpoint, clientSecretBasic, new AuthorizationCodeGrant(authorizationCode, redirect));
-		try {
-            HTTPResponse tokenResponse = tokenRequest.toHTTPRequest().send();
-            tokenResponse.indicatesSuccess();
-            return AccessTokenResponse.parse(tokenResponse);
-		} catch (Exception e) {
-			LOG.error(e.getClass().getSimpleName() + " " + e.getMessage());
-		}
-
-		return null;
-	}
-
-	/**
-	 * resolveAuthorizationCode
-	 */
-	private AuthorizationCode resolveAuthorizationCode(Request request, URI requestURI) {
-		try {
-			AuthorizationSuccessResponse response = AuthorizationSuccessResponse.parse(requestURI);
-			return response.getAuthorizationCode();
-		} catch (Exception e) {
-			LOG.trace("invalid authorization-response {}", requestURI);
-		}
-		return null;
-	}
-
-	/**
-	 * resolveAccessToken: auth header and query param supported (form param not supported)
-	 */
-	private AccessToken resolveAccessToken(Request request, URI requestURI) {
-        String queryParam = request.getParameter("access_token");
-        if (StringUtils.isNotEmpty(queryParam)) {
-            return new BearerAccessToken(queryParam);
-        }
-
-		String authorization = request.getHeader("Authorization");
-		if (authorization != null && authorization.contains("Bearer")) {
-			try {
-				return BearerAccessToken.parse(authorization);
-			} catch (Exception e) {
-				LOG.debug("invalid authorization-header {}", authorization);
-			}
-		}
-
-		return null;
-	}
 
 	/**
 	 * authenticate with accessToken
 	 */
 	@SuppressWarnings("unchecked")
-	private boolean authenticate(AccessToken accessToken, Request request, HttpServletResponse response) {
+	private boolean authenticate(AccessToken accessToken, Request request, HttpServletResponse response) throws IOException {
 
 		if (accessToken == null) {
 			return false;
 		}
 
-		LOG.debug("authenticate accessToken {}", accessToken);
+		LOG.debug("authenticate with accessToken {}", accessToken);
 		
-		UserInfo userInfo = null;
-		try {
-
-			URI uri = new URI(String.format("%s?id=%s", userInfoEndpoint.toString(), accessToken.getValue()));
-			HttpGet httpGet = new HttpGet(uri);
-
-			httpGet.setHeader("Authorization", new BearerAccessToken(accessToken.getValue()).toAuthorizationHeader());
-
-			HttpCacheContext context = HttpCacheContext.create();
-			CloseableHttpResponse userInfoResponse = cachingHttpClient.execute(httpGet, context);
-			LOG.debug("read userinfo {} {}", accessToken.getValue(), context.getCacheResponseStatus());
-
-			HttpEntity entity = userInfoResponse.getEntity();
-			if (entity==null){
-				LOG.info("no userInfo available for {}", accessToken.getValue());
-				return false;
-			}
-
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			entity.writeTo(baos);
-			userInfo = UserInfo.parse(baos.toString());
-		} catch (Exception e) {
-			LOG.error("ups", e);
-		}
-
+		UserInfo userInfo = userInfoResolver.resolve(accessToken);
 		if (userInfo == null) {
 			LOG.trace("no userInfo available for {}", accessToken.getValue());
 			return false;
@@ -270,46 +151,30 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 	@Override
 	@SuppressWarnings("unchecked")
 	public void start() throws LifecycleException {
-		if (authEndpoint == null || tokenEndpoint == null || userInfoEndpoint == null || clientId == null) {
-			throw new LifecycleException("Endpoint/ClientId missing");
-		}
-
-		CacheConfig cacheConfig = CacheConfig.custom().setMaxCacheEntries(1000).setMaxObjectSize(8192).build();
-
-		RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(30000).setSocketTimeout(30000).build();
-
-		cachingHttpClient = CachingHttpClients.custom().setCacheConfig(cacheConfig).setDefaultRequestConfig(requestConfig).build();
-
-		if (clientSecretValue != null) {
-			clientSecretBasic = new ClientSecretBasic(clientId, new Secret(clientSecretValue));
-		}
-
+		oauthProtocol.initialize();
+		userInfoResolver.initialize();
 		super.start();
-		LOG.info("OAuthAuthenticator initialized, authEndpoint={}, tokenEndpoint={}", authEndpoint, tokenEndpoint);
+		LOG.info("OAuthAuthenticator initialized {} {}", oauthProtocol, userInfoResolver);
 	}
 
 	public void setAuthEndpoint(String authEndpoint) {
-		try {
-			this.authEndpoint = new URI(authEndpoint);
-		} catch (Exception e) {
-			throw new IllegalArgumentException("invalid authEndpoint " + authEndpoint);
-		}
+		oauthProtocol.setAuthEndpoint(authEndpoint);
 	}
 
 	public void setTokenEndpoint(String tokenEndpoint) {
-		try {
-			this.tokenEndpoint = new URI(tokenEndpoint);
-		} catch (Exception e) {
-			throw new IllegalArgumentException("invalid tokenEndpoint " + tokenEndpoint);
-		}
+		oauthProtocol.setTokenEndpoint(tokenEndpoint);
 	}
 
 	public void setUserInfoEndpoint(String userInfoEndpoint) {
-		try {
-			this.userInfoEndpoint = new URI(userInfoEndpoint);
-		} catch (Exception e) {
-			throw new IllegalArgumentException("invalid userInfoEndpoint " + userInfoEndpoint);
-		}
+		userInfoResolver.setUserInfoEndpoint(userInfoEndpoint);
+	}
+
+	public void setClientSecret(String clientSecret) {
+		oauthProtocol.setClientSecretValue(clientSecret);
+	}
+
+	public void setClientId(String clientId) {
+		oauthProtocol.setClientId(clientId);
 	}
 
 	public void setSupportHttpSession(boolean supportHttpSession) {
@@ -318,14 +183,6 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 
 	public void setSupportAuthCode(boolean supportAuthCode) {
 		this.supportAuthCode = supportAuthCode;
-	}
-
-    public void setClientSecret(String clientSecret) {
-        this.clientSecretValue = clientSecret;
-    }
-
-	public void setClientId(String clientId) {
-		this.clientId = new ClientID(clientId);
 	}
 
 	public void setSupportGuest(boolean supportGuest) {
