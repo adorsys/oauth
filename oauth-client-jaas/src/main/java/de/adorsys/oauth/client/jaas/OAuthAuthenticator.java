@@ -131,7 +131,7 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 		AuthorizationCode authorizationCode = resolveAuthorizationCode(request, requestURI);
 		if (authorizationCode != null) {
             AccessTokenResponse accessTokenResponse = handleAuthorization(authorizationCode, requestURI, response);
-            accessToken = accessTokenResponse != null ? accessTokenResponse.getAccessToken() : null;
+            accessToken = accessTokenResponse != null &&  accessTokenResponse.getTokens() != null ? accessTokenResponse.getTokens().getAccessToken() : null;
 
             // authenticate and store bearer token in session
             if (accessToken != null && authenticate(accessToken, request, response)) {

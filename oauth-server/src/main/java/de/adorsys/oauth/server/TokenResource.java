@@ -26,6 +26,7 @@ import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
+import com.nimbusds.oauth2.sdk.token.Tokens;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 import org.slf4j.Logger;
@@ -47,6 +48,7 @@ import javax.ws.rs.core.Context;
  */
 @Path("token")
 @ApplicationScoped
+@SuppressWarnings("unused")
 public class TokenResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(TokenResource.class);
@@ -122,7 +124,7 @@ public class TokenResource {
         LOG.info("accessToken {}", accessToken.toJSONString());
 
         ServletUtils.applyHTTPResponse(
-                new AccessTokenResponse(accessToken, refreshToken).toHTTPResponse(),
+                new AccessTokenResponse(new Tokens(accessToken, refreshToken)).toHTTPResponse(),
                 servletResponse);
     }
 
@@ -141,7 +143,7 @@ public class TokenResource {
         LOG.info("accessToken {}", accessToken.toJSONString());
 
         ServletUtils.applyHTTPResponse(
-                new AccessTokenResponse(accessToken, refreshToken).toHTTPResponse(),
+                new AccessTokenResponse(new Tokens(accessToken, refreshToken)).toHTTPResponse(),
                 servletResponse);
     }
 
