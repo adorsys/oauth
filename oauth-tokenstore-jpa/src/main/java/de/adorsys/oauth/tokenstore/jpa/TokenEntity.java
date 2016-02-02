@@ -44,7 +44,7 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "TOKEN_ENTITY")
 @NamedQueries({
-    @NamedQuery(name = TokenEntity.FIND_ACCESSTOKEN, query = "select t from TokenEntity t where authCode = ?1")
+    @NamedQuery(name = TokenEntity.FIND_ACCESSTOKEN, query = "select t from TokenEntity t where t.authCode = ?1")
 })
 @SuppressWarnings({"FieldCanBeLocal", "unused"})
 public class TokenEntity {
