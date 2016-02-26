@@ -9,7 +9,7 @@ target/
 .project
 .classpath
 .settings/
-
+*.DS_Store
 
 
 oauth-server-sample/src/main/webapp/components

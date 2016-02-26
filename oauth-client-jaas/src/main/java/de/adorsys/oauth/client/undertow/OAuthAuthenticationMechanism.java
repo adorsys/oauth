@@ -1,6 +1,8 @@
 package de.adorsys.oauth.client.undertow;
 
+import com.nimbusds.oauth2.sdk.AccessTokenResponse;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
+import com.nimbusds.oauth2.sdk.token.Tokens;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 import de.adorsys.oauth.client.protocol.OAuthProtocol;
@@ -94,9 +96,13 @@ public class OAuthAuthenticationMechanism implements AuthenticationMechanism {
         }
 
         // 2. run AuthorizationCodeFlow
-        accessToken = oauthProtocol.runAuthorizationCodeFlow(requestURI);
-        if (authenticate(securityContext, accessToken, request, response)) {
-            return AuthenticationMechanismOutcome.AUTHENTICATED;
+        AccessTokenResponse accessTokenResponse = oauthProtocol.runAuthorizationCodeFlow(requestURI);
+        if (accessTokenResponse != null && accessTokenResponse.getTokens() != null) {
+            Tokens tokens = accessTokenResponse.getTokens();
+            accessToken = tokens.getAccessToken(); //TODO refresh_token, login_session "supportHttpSession"
+            if (authenticate(securityContext, accessToken, request, response)) {
+                return AuthenticationMechanismOutcome.AUTHENTICATED;
+            }
         }
 
         // 3. redirect to authEndpoint to gain authCode

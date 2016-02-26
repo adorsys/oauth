@@ -69,7 +69,9 @@ public class UserInfoFactory {
         }
 
         // add non role groups as claim to userinfo
-        addCustomGroups(userInfo, subjectInfo.getAuthenticatedSubject().getPrincipals());
+        if (subjectInfo.getAuthenticatedSubject() != null) {
+        	addCustomGroups(userInfo, subjectInfo.getAuthenticatedSubject().getPrincipals());
+        }
 
         return userInfo;
     }

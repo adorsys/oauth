@@ -15,30 +15,47 @@
  */
 package de.adorsys.oauth.server;
 
+import java.net.URI;
+
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
+import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
+import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
-import com.nimbusds.oauth2.sdk.token.Token;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 /**
  * TokenStore
  */
 public interface TokenStore {
+	
+	RefreshTokenAndMetadata findRefreshToken(RefreshToken refreshToken);
 
-    String add(Token token, UserInfo userInfo);
+	void addAuthCode(AuthorizationCode token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId, URI redirectUri);
 
-    String add(Token token, UserInfo userInfo, AuthorizationCode authCode);
+    void addRefreshToken(RefreshToken token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId);
 
-    void remove(String id);
+    void addAccessToken(BearerAccessToken token, UserInfo userInfo, ClientID clientId, RefreshToken refreshToken);
+    
+    void remove(String id, ClientID clientId);
 
     AccessToken load(String id);
 
-    AccessToken load(AuthorizationCode authCode);
-
-    RefreshToken loadRefreshToken(String id);
-
+    AuthCodeAndMetadata consumeAuthCode(AuthorizationCode authCode);
+    
     UserInfo loadUserInfo(String id);
 
     boolean isValid(String id);
+
+    void addLoginSession(LoginSessionToken sessionId, UserInfo userInfo);
+
+    UserInfo loadUserInfoFromLoginSession(LoginSessionToken sessionId);
+
+    void removeLoginSession(LoginSessionToken sessionId);
+
+    void remove(LoginSessionToken loginSessionToken);
+
+    boolean isValid(LoginSessionToken loginSessionToken);
+
+    void invalidateLoginSession(LoginSessionToken loginSessionToken);
 }

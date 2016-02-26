@@ -15,13 +15,18 @@
  */
 package de.adorsys.oauth.client.valve;
 
+import com.nimbusds.oauth2.sdk.AccessTokenResponse;
+import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
+import com.nimbusds.oauth2.sdk.token.RefreshToken;
+import com.nimbusds.oauth2.sdk.token.Tokens;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 import de.adorsys.oauth.client.protocol.OAuthProtocol;
 import de.adorsys.oauth.client.protocol.UserInfoResolver;
 
 import org.apache.catalina.LifecycleException;
+import org.apache.catalina.Session;
 import org.apache.catalina.authenticator.AuthenticatorBase;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.deploy.LoginConfig;
@@ -29,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.net.URI;
@@ -60,6 +66,7 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 		userInfoResolver = new UserInfoResolver();
 		// authcode is default enabled
 		supportAuthCode = true;
+        supportHttpSession = false;
 	}
 
 	@Override
@@ -84,7 +91,7 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 		}
 
 		// try to authenticate with accessToken
-        if (authenticate(accessToken, request, response)) {
+        if (authenticate(accessToken, request, response, null, null)) {
 			return true;
 		}
 
@@ -95,10 +102,16 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 		}
 
 		// 2. run AuthorizationCodeFlow
-		accessToken = oauthProtocol.runAuthorizationCodeFlow(requestURI);
-        if (authenticate(accessToken, request, response)) {
-			return true;
-		}
+        AccessTokenResponse accessTokenResponse = oauthProtocol.runAuthorizationCodeFlow(requestURI);
+        if (accessTokenResponse != null && accessTokenResponse.getTokens() != null) {
+            Tokens tokens = accessTokenResponse.getTokens();
+            accessToken = tokens.getAccessToken();
+            RefreshToken refreshToken = tokens.getRefreshToken();
+            Object sessionId = accessTokenResponse.getCustomParameters().get("login_session");
+            if (authenticate(accessToken, request, response, refreshToken, sessionId)) {
+                return true;
+            }
+        }
 
 		// 3. redirect to authEndpoint to gain authCode
 		oauthProtocol.doAuthorizationRequest(response, requestURI);
@@ -112,7 +125,7 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 	 * authenticate with accessToken
 	 */
 	@SuppressWarnings("unchecked")
-	private boolean authenticate(AccessToken accessToken, Request request, HttpServletResponse response)  {
+	private boolean authenticate(AccessToken accessToken, Request request, HttpServletResponse response, RefreshToken refreshToken, Object sessionId)  {
 
 		if (accessToken == null) {
 			return false;
@@ -131,7 +144,16 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 
 		Principal principal = context.getRealm().authenticate(userInfo.getSubject().getValue(), accessToken.getValue());
 		if (supportHttpSession) {
-			request.getSessionInternal(); // force to create http-session
+			Session session = request.getSessionInternal(); // force to create http-session
+
+            HttpSession httpSession = session.getSession();
+            httpSession.setAttribute("access_token", accessToken.getValue());
+            if (refreshToken != null) {
+                httpSession.setAttribute("refresh_token", refreshToken.getValue());
+            }
+            if (sessionId != null) {
+                httpSession.setAttribute("login_session", sessionId);
+            }
 		}
 		request.setUserPrincipal(principal);
 		response.setHeader("Authorization", accessToken.toAuthorizationHeader());

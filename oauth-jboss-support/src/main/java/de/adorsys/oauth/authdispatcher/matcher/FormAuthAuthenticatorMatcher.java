@@ -15,13 +15,13 @@
  */
 package de.adorsys.oauth.authdispatcher.matcher;
 
-import com.nimbusds.oauth2.sdk.AuthorizationRequest;
+import javax.servlet.http.HttpServletRequest;
 
 import org.apache.catalina.valves.ValveBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.http.HttpServletRequest;
+import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 
 public class FormAuthAuthenticatorMatcher extends BaseAuthenticatorMatcher {
 
@@ -33,7 +33,7 @@ public class FormAuthAuthenticatorMatcher extends BaseAuthenticatorMatcher {
 
 	@Override
 	public ValveBase match(HttpServletRequest request, AuthorizationRequest authorizationRequest) {
-		return authorizationRequest != null && request.getParameter("formlogin") != null ? valve : null;
+		return request.getMethod().equalsIgnoreCase("POST") && authorizationRequest != null && "/auth".equals(request.getPathInfo()) ? valve : null;
 	}
 
 }

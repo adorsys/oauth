@@ -15,7 +15,10 @@ import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 
+import com.nimbusds.oauth2.sdk.token.Tokens;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +29,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 
@@ -60,6 +65,31 @@ public class OAuthProtocol {
             return new URL(request.getScheme(), request.getServerName(), request.getServerPort(), request.getRequestURI() + query).toURI();
         } catch (Exception e) {
             throw new IllegalStateException(e);
+        }
+    }
+
+    private URI removeCodeParameterFromUri(URI uri) {
+        try {
+            String query = "";
+
+            if (uri.getQuery() != null) {
+                List<NameValuePair> params = URLEncodedUtils.parse(uri, "UTF-8");
+                List<NameValuePair> parmsWithoutCode = new ArrayList<>();
+
+                for (NameValuePair param : params) {
+                    if (!"code".equalsIgnoreCase(param.getName())) {
+                        parmsWithoutCode.add(param);
+                    }
+                }
+
+                if (parmsWithoutCode.size() > 0) {
+                    query = "?" + URLEncodedUtils.format(parmsWithoutCode, "UTF-8");
+                }
+            }
+
+            return new URL(uri.getScheme(), uri.getHost(), uri.getPort(), uri.getPath() + query).toURI();
+        } catch (Exception e) {
+            return uri;
         }
     }
 
@@ -127,22 +157,22 @@ public class OAuthProtocol {
     /**
      * check if an authorization code is available and change this code to an access token
      */
-    public AccessToken runAuthorizationCodeFlow(URI requestURI) {
+    public AccessTokenResponse runAuthorizationCodeFlow(URI requestURI) {
         AuthorizationCode authorizationCode = resolveAuthorizationCode(requestURI);
         if (authorizationCode == null) {
             return null;
         }
-
-        AccessTokenResponse accessTokenResponse = handleAuthorization(authorizationCode, requestURI);
-        return accessTokenResponse != null &&  accessTokenResponse.getTokens() != null ? accessTokenResponse.getTokens().getAccessToken() : null;
+        return handleAuthorization(authorizationCode, requestURI);
     }
 
     /**
      * ask the authEndpoint for an authorization code
      */
     public void doAuthorizationRequest(HttpServletResponse response, URI requestURI)  {
+        URI requestUriWithoutCode = removeCodeParameterFromUri(requestURI);
+
         AuthorizationRequest authorizationRequest = new AuthorizationRequest.Builder(new ResponseType(Value.CODE), clientId).endpointURI(authEndpoint)
-                .redirectionURI(requestURI).build();
+                .redirectionURI(requestUriWithoutCode).build();
 
         String redirect = String.format("%s?%s", authorizationRequest.toHTTPRequest().getURL(), authorizationRequest.toHTTPRequest().getQuery());
 
@@ -173,10 +203,11 @@ public class OAuthProtocol {
      * handleAuthorization - ask tokenEndpoint for access token
      */
     private AccessTokenResponse handleAuthorization(AuthorizationCode authorizationCode, URI redirect) {
+        URI requestUriWithoutCode = removeCodeParameterFromUri(redirect);
 
         TokenRequest tokenRequest = clientSecretBasic == null ?
-                new TokenRequest(tokenEndpoint, clientId, new AuthorizationCodeGrant(authorizationCode, redirect))
-                : new TokenRequest(tokenEndpoint, clientSecretBasic, new AuthorizationCodeGrant(authorizationCode, redirect));
+                new TokenRequest(tokenEndpoint, clientId, new AuthorizationCodeGrant(authorizationCode, requestUriWithoutCode))
+                : new TokenRequest(tokenEndpoint, clientSecretBasic, new AuthorizationCodeGrant(authorizationCode, requestUriWithoutCode));
         try {
             HTTPResponse tokenResponse = tokenRequest.toHTTPRequest().send();
             tokenResponse.indicatesSuccess();

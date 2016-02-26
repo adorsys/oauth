@@ -25,7 +25,9 @@ import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 
 import de.adorsys.oauth.authdispatcher.matcher.BasicAuthAuthenticatorMatcher;
 import de.adorsys.oauth.authdispatcher.matcher.FormAuthAuthenticatorMatcher;
+import de.adorsys.oauth.authdispatcher.matcher.RememberMeAuthMatcher;
 
+import de.adorsys.oauth.authdispatcher.matcher.ResourceOwnerPasswordCredentialsFlowMatcher;
 import org.apache.catalina.Container;
 import org.apache.catalina.Valve;
 import org.apache.catalina.connector.Request;
@@ -163,6 +165,7 @@ public class OAuthAuthenticationDispatcher extends ValveBase implements PolicyCo
 			}
 			LOG.debug("no authentificator found for {}", request.getDecodedRequestURI());
 		} catch (Exception e) {
+			e.printStackTrace();
 			LOG.error("error during calling {}: {} {}", authenticator, e.getClass().getSimpleName(), e.getMessage());
 		}
 		finally {
@@ -193,8 +196,10 @@ public class OAuthAuthenticationDispatcher extends ValveBase implements PolicyCo
 		}
 
 		if (list.isEmpty()) {
+            list.add(new ResourceOwnerPasswordCredentialsFlowMatcher());
 			list.add(new FormAuthAuthenticatorMatcher());
 			list.add(new BasicAuthAuthenticatorMatcher());
+			list.add(new RememberMeAuthMatcher());
 		}
 		return list;
 	}

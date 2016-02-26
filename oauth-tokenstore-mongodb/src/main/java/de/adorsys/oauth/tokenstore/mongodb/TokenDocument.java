@@ -18,8 +18,10 @@ package de.adorsys.oauth.tokenstore.mongodb;
 import org.bson.Document;
 import net.minidev.json.JSONObject;
 
+import com.mongodb.util.JSON;
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
@@ -27,132 +29,161 @@ import com.nimbusds.oauth2.sdk.token.Token;
 import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
+import de.adorsys.oauth.server.LoginSessionToken;
+
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * TokenEntity
  */
 @SuppressWarnings({"FieldCanBeLocal", "unused"})
-public class TokenDocument {
+public class TokenDocument<T extends Token> {
+	
+	enum TokenType {
+		ACCESS,
+		REFRESH
+	}
+	
+	private final T token;
     
-    private String id;
+    private final TokenType type;
 
-    private Date created;
+    private final Date created;
 
-    private String token;
+    private final Map<String, Object> userInfo;
 
-    private String userInfo;
+    private final Date expires;
 
-    private Date expires;
+    private final ClientID clientId;
+    
+    private final LoginSessionToken sessionId;
 
-    private String authCode;
-
-    public TokenDocument() {
-    }
-
-    public TokenDocument(Token token, UserInfo userInfo) {
-        this.id      = token.getValue();
-        this.token   = token.toJSONObject().toJSONString();
-        this.created = new Date();
+    private String refreshTokenRef;
+    
+    public TokenDocument(T token, Date created, ClientID clientId, LoginSessionToken sessionId, UserInfo userInfo) {
+    	if (token instanceof BearerAccessToken) {
+    		this.type = TokenType.ACCESS;
+    	} else if (token instanceof RefreshToken) {
+    		this.type = TokenType.REFRESH;
+    	} else {
+    		throw new IllegalArgumentException("unknow token type " + token.getClass().getName());
+    	}
+        this.token = token;
+        this.created = created;
+        this.sessionId = sessionId;
+        this.clientId = clientId;
 
         if (token instanceof AccessToken && 0 != ((AccessToken) token).getLifetime()) {
-            Calendar cal = Calendar.getInstance();
-            cal.add(Calendar.SECOND, (int) ((AccessToken) token).getLifetime());
-            expires = cal.getTime();
+            expires = new Date(created.getTime() + ((AccessToken) token).getLifetime() * 1000);
+        } else {
+        	expires = new Date(Long.MAX_VALUE);
         }
 
         if (userInfo != null) {
-            this.userInfo = userInfo.toJSONObject().toJSONString();
+            this.userInfo = userInfo.toJSONObject();
+        } else {
+        	this.userInfo = null;
         }
-    }
-
-    public TokenDocument(Token token, UserInfo userInfo, AuthorizationCode authCode) {
-        this(token, userInfo);
-        this.authCode = authCode != null ? authCode.getValue() : null;
     }
 
     public Document asDocument() {
-        Document document = new Document("_id", id)
-                .append("token", token)
+        Document document = new Document("_id", token.getValue())
                 .append("created", created)
-                .append("userInfo", userInfo);
-
+                .append("clientId", clientId.getValue())
+                .append("userInfo", userInfo)
+                .append("type", type.name());
+        if (sessionId != null) {
+        	document.append("sessionId", sessionId.getValue());
+        }
+        
         if (expires != null) {
             document.append("expires", expires);
         }
-        if (authCode != null) {
-            document.append("authCode", authCode);
+        if (refreshTokenRef != null) {
+            document.append("refreshTokenRef", refreshTokenRef);
         }
 
         return document;
     }
+    
 
-    public static TokenDocument from(Document document) {
-        TokenDocument tokenDocument = new TokenDocument();
-        tokenDocument.id       = document.getString("id");
-        tokenDocument.token    = document.getString("token");
-        tokenDocument.userInfo = document.getString("userInfo");
-        tokenDocument.authCode = document.getString("authCode");
-        tokenDocument.created  = document.getDate("created");
-        tokenDocument.expires  = document.getDate("expires");
+    public static <T extends Token> TokenDocument<T> from(Document document) {
+    	String type = document.getString("type");
+    	assert type != null : "type is null";
+    	
+    	TokenDocument<T> tokenDocument;
+    	UserInfo userInfoObject = new UserInfo(new JSONObject((Map<String,?>)document.get("userInfo")));
+		ClientID clientIdObj = new ClientID(document.getString("clientId"));
+		LoginSessionToken loginSession = document.getString("sessionId") != null ? new LoginSessionToken(document.getString("sessionId")) : null;
+		Date created = document.getDate("created");
+		if (TokenType.ACCESS.name().equals(type)) {
+    		long tokenLifetime = (document.getDate("expires").getTime() - created.getTime()) / 1000; 
+    		BearerAccessToken bearerAccessToken = new BearerAccessToken(document.getString("_id"), tokenLifetime, null);
+			tokenDocument = (TokenDocument<T>) new TokenDocument<BearerAccessToken>(bearerAccessToken, created, clientIdObj, loginSession, userInfoObject);
+    	} else if (TokenType.REFRESH.name().equals(type)) {
+    		RefreshToken refreshToken = new RefreshToken(document.getString("_id"));
+			tokenDocument = (TokenDocument<T>) new TokenDocument<RefreshToken>(refreshToken,  created, clientIdObj, loginSession, userInfoObject);
+    	} else {
+    		throw new IllegalArgumentException("unknow token type " + type);
+    	}
+    	
+    	
+        tokenDocument.refreshTokenRef = document.getString("refreshTokenRef");
         return tokenDocument;
     }
 
-    public AccessToken asAccessToken() {
-        try {
-            return BearerAccessToken.parse(getJSONObject(token));
-        } catch (Exception e) {
-            // 
-        }
-        return null;
+    public T asToken() {
+        return getToken();
     }
 
-    public RefreshToken asRefreshToken() {
-        try {
-            return RefreshToken.parse(getJSONObject(token));
-        } catch (Exception e) {
-            // 
-        }
-        return null;
-    }
-    
-    private JSONObject getJSONObject(String value) {
-        if (value == null) {
-            return null;
-        }
-        try {
-            return JSONObjectUtils.parse(value);
-        } catch (ParseException e) {
-            throw new IllegalStateException("invalid content " + e.getMessage());
-        }
-    }
-    
     public boolean isValid() {
-        
-        AccessToken accessToken = asAccessToken();
-        if (accessToken != null) {
-            return expires == null || System.currentTimeMillis() < expires.getTime();
-        } 
-        
-        return asRefreshToken() != null;
+        return expires == null || System.currentTimeMillis() < expires.getTime();
     }
 
     @Override
     public String toString() {
-        return expires != null ? String.format("%1$Td.%1$Tm.%1$Ty-%1$TT.%1$TL %2$s", expires, token) : token;
+        return asDocument().toJson();
     }
 
     public UserInfo getUserInfo() {
-        return userInfo == null ? null : new UserInfo(getJSONObject(userInfo));
+        return userInfo == null ? null : new UserInfo(new JSONObject(userInfo));
     }
 
-    public String getJsonUserInfo() {
-        return userInfo;
-    }
+	public void setRefreshTokenRef(String refreshTokenRef) {
+		this.refreshTokenRef = refreshTokenRef;
+	}
 
-    public String getAuthCode() {
-        return authCode;
-    }
+	public String getRefreshTokenRef() {
+		return refreshTokenRef;
+	}
+
+	public T getToken() {
+		return token;
+	}
+
+	public TokenType getType() {
+		return type;
+	}
+
+	public Date getCreated() {
+		return created;
+	}
+
+	public Date getExpires() {
+		return expires;
+	}
+
+	public ClientID getClientId() {
+		return clientId;
+	}
+
+	public LoginSessionToken getSessionId() {
+		return sessionId;
+	}
+	
+	
 
 }

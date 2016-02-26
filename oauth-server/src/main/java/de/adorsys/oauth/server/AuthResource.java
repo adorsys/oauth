@@ -90,7 +90,7 @@ public class AuthResource {
 
         AuthorizationRequest request = resolveAuthorizationRequest();
 
-        ResponseBuilder response = Response.status(302).header("Authorization", null); // remove existing auth ...
+        ResponseBuilder response = Response.status(302);
         
         if (request.getRedirectionURI() == null) {
             return response.location(
@@ -116,21 +116,40 @@ public class AuthResource {
                     .build();
         }
 
-        UserInfo userInfo = userInfoFactory.createUserInfo(servletRequest);
+        UserInfo userInfo;
+        LoginSessionToken loginSession = (LoginSessionToken) servletRequest.getAttribute("loginSession");
+        if (loginSession != null) {
+        	userInfo = tokenStore.loadUserInfoFromLoginSession(loginSession);
+        	if (userInfo == null) {
+        		userInfo = userInfoFactory.createUserInfo(servletRequest);
+       			tokenStore.addLoginSession(loginSession, userInfo);
+        	}
+        } else {
+    		userInfo = userInfoFactory.createUserInfo(servletRequest);
+        }
+
         LOG.debug(userInfo.toJSONObject().toJSONString());
         
         BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
 
         if (request.getResponseType().impliesCodeFlow()) {
-            AuthorizationCode authCode = new AuthorizationCode();
+        	if (loginSession != null) {
+                // rememberme cookie exists and login session invalid => destroy
+                if (RememberMeCookieUtil.getCookieToken(servletRequest,request.getClientID()) != null && ! tokenStore.isValid(loginSession) ) {
+        			servletRequest.removeAttribute("loginSession");
+                    tokenStore.removeLoginSession(loginSession);
+                    return response.location(request.toURI()).build();
+        		}
+        	}
+        	AuthorizationCode authCode = new AuthorizationCode();
             LOG.info("impliesCodeFlow {}", authCode.toJSONString());
-            
-            tokenStore.add(accessToken, userInfo, authCode);
+			tokenStore.addAuthCode(authCode, userInfo, request.getClientID(), loginSession, request.getRedirectionURI());
+			
             return response.location(new AuthorizationSuccessResponse(request.getRedirectionURI(), authCode, null, request.getState(), request.getResponseMode()).toURI()).build();
         }
 
         LOG.info("impliesTokenFlow {}", accessToken.toJSONString());
-        tokenStore.add(accessToken, userInfo);
+        tokenStore.addAccessToken(accessToken, userInfo, request.getClientID(), null);
 
         AuthorizationSuccessResponse successResponse = new AuthorizationSuccessResponse(request.getRedirectionURI(), null, accessToken, request.getState(), request.getResponseMode());
         String location = successResponse.toURI().toString();
@@ -150,11 +169,11 @@ public class AuthResource {
     private AuthorizationRequest resolveAuthorizationRequest() throws ParseException {
 
         if (isNotBlank(servletRequest.getParameter(CLIENT_ID_STR))) {
-			return AuthorizationRequest.parse(requestParameters(servletRequest));
+			return AuthorizationRequest.parse(extractURI(servletRequest), requestParameters(servletRequest));
     	}
     	
     	if ((contains(servletRequest.getQueryString(), CLIENT_ID_STR))) {
-    		return AuthorizationRequest.parse(servletRequest.getQueryString());
+    		return AuthorizationRequest.parse(extractURI(servletRequest),servletRequest.getQueryString());
     	}
 
     	// if we are dealing with a returning SAMLREsponse we might consider parsing the relayState
@@ -191,4 +210,14 @@ public class AuthResource {
 		}
 		return params;
 	}
+
+    private URI extractURI(HttpServletRequest request) {
+        try {
+            String query = request.getQueryString() == null ? "" : "?" + request.getQueryString();
+            return new URL(request.getScheme(), request.getServerName(), request.getServerPort(), request.getRequestURI()).toURI();
+        } catch (Exception e) {
+            LOG.warn("Error extracting auth/ URI: " + e.getMessage());
+            return null;
+        }
+    }
 }

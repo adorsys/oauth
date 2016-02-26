@@ -15,8 +15,12 @@
  */
 package de.adorsys.oauth.sample;
 
-import com.jayway.restassured.config.RestAssuredConfig;
-import com.jayway.restassured.response.Response;
+import static com.jayway.restassured.RestAssured.given;
+import static org.junit.Assert.assertTrue;
+
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
@@ -24,16 +28,15 @@ import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Assert;
 import org.junit.runner.RunWith;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static com.jayway.restassured.RestAssured.given;
-import static com.jayway.restassured.config.RedirectConfig.redirectConfig;
-import static com.jayway.restassured.config.RestAssuredConfig.newConfig;
-import static org.junit.Assert.assertTrue;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.response.ExtractableResponse;
+import com.jayway.restassured.response.Response;
+import com.nimbusds.oauth2.sdk.util.URIUtils;
 
 /**
  * TestImplicitFlow
@@ -53,32 +56,38 @@ public class TestImplicitFlow {
                 .addAsWebInfResource("jboss-deployment-structure.xml")
                 ;
     }
+    
+    @BeforeClass
+    public static void setLogging(){
+    	RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+    }
 
     @Test @RunAsClient
     public void testImplicit() throws Exception {
-
-        RestAssuredConfig config = newConfig().redirect(redirectConfig().followRedirects(false));
-
-        Response response = given()
-                .config(config)
+        String generatedState = UUID.randomUUID().toString();
+		ExtractableResponse<Response> response = given()
+                .redirects().follow(false)
                 .queryParam("response_type", "token")
-                .queryParam("client_id", "sampe")
+                .queryParam("client_id", "sample")
+                .queryParam("state", generatedState)
                 .queryParam("redirect_uri", SampleRequest.SAMPLE_URL)
-                .auth().preemptive().basic("test", "1234")
+                .formParam("j_username", "jduke")
+        		.formParam("j_password", "1234")
                 .when()
-                .get(SampleRequest.AUTH_ENDPOINT);
-
-        response.then().statusCode(302);
-        String location = response.then().extract().header("Location");
-
-        Pattern pattern = Pattern.compile("[\\?#]([^&=]+)=([^&=]+)");
-        Matcher matcher = pattern.matcher(location);
-
-        assertTrue(matcher.find());
-        String accessToken = matcher.group(2);
-
-        System.out.println("\noauth token " + accessToken);
-
+                .post(SampleRequest.AUTH_ENDPOINT)
+                .then()
+                .statusCode(302)
+                .extract();
+        String location = response.header("Location");
+        System.out.println("\nredirect " + location);
+        int startIndexAccessToken = location.indexOf("access_token") + 13;
+		int endIndexAccessToken = location.indexOf("&", startIndexAccessToken);
+		String accessToken = location.substring(startIndexAccessToken, endIndexAccessToken == -1 ? location.length() : endIndexAccessToken);
+        
+        int beginIndex = location.indexOf("state") + 6;
+		String state = location.substring(beginIndex, beginIndex + generatedState.length());
+		System.out.println("\noauth token " + accessToken);
+		Assert.assertEquals(generatedState, state);
         SampleRequest.verify(accessToken);
     }
 }

@@ -15,19 +15,25 @@
  */
 package de.adorsys.oauth.sample;
 
+import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.config.RestAssuredConfig;
+import com.jayway.restassured.response.ExtractableResponse;
 import com.jayway.restassured.response.Response;
 
+import org.hamcrest.Matchers;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.net.URL;
+import java.util.Map;
 
 import static com.jayway.restassured.RestAssured.given;
 import static com.jayway.restassured.config.RedirectConfig.redirectConfig;
@@ -54,43 +60,49 @@ public class TestAuthCodeFlow {
 //        System.out.println(a.toString(true));
 //        return a;
     }
+    
+    @BeforeClass
+    public static void setLogging(){
+    	RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+    }
 
     @Test @RunAsClient
     public void testAuthCode() throws Exception {
-
-        RestAssuredConfig config = newConfig().redirect(redirectConfig().followRedirects(false));
-
-        Response response = given()
-                          //  .log().all()
-                            .config(config)
+        ExtractableResponse<Response> response = given()
+        			.redirects().follow(false)
                             .when()
                             .get(SampleRequest.SAMPLE_URL)
+                            .then()
+                            .statusCode(302)
+                            .header("Location", Matchers.containsString("oauth/api/auth"))
+                            .extract();
                             ;
 
         // redirect zum IDP
-        response.then().statusCode(302);
-        String location = response.then().extract().header("Location");
+        String location = response.header("Location");
 
-        assertTrue(location.contains("oauth/api/auth"));
-
-        response = given()
-                //  .log().all()
+        given()
                 .when()
                 .get(location)
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("Hello, please log in"))
                 ;
 
-        int status = response.getStatusCode();
-        assertTrue(status == 401 || status == 403);
+
         response = given()
-                //.log().all()
-                .config(config)
-                .auth().preemptive().basic("test", "1234")
+        		.redirects().follow(false)
+        		.formParam("j_username", "jduke")
+        		.formParam("j_password", "1234")
                 .when()
-                .get(location)
+                .urlEncodingEnabled(false)
+                .post(location)
+                .then().statusCode(302)
+                .extract()
+                
         ;
 
-        response.then().statusCode(302);
-        location = response.then().extract().header("Location");
+        location = response.header("Location");
 
         URL idpUrl = new URL(location);
 
@@ -99,18 +111,27 @@ public class TestAuthCodeFlow {
         String authCode = location.substring(location.indexOf("?") + 6);
 
         response = given()
-                 //  .log().all()
-                   .config(config)
-                   .contentType("application/x-www-form-urlencoded")
+        		.log().all()
+        	.authentication().basic("sample", "password")
+            .contentType("application/x-www-form-urlencoded")
                    .formParam("grant_type", "authorization_code")
                    .formParam("code", authCode)
                    .formParam("redirect_uri", SampleRequest.SAMPLE_URL)
                    .formParam("client_id", "sample")
                    .when()
                    .post(String.format("http://%s:%d/oauth/api/token", idpUrl.getHost(), idpUrl.getPort()))
+                   .then()
+                   .statusCode(200)
+                   .body("access_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                   .body("refresh_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                   .body("expires_in", Matchers.not(Matchers.isEmptyOrNullString()))
+                   .body("token_type", Matchers.is("Bearer"))
+                   .header("Pragma", "no-cache")
+                   .header("Cache-Control", "no-store")
+                   .extract()
                    ;
 
-        response.then().statusCode(200);
+        ;
 
         String accessToken = response.jsonPath().get("access_token");
         String refreshToken = response.jsonPath().get("refresh_token");
@@ -118,6 +139,210 @@ public class TestAuthCodeFlow {
         System.out.printf("accessToken %s refreshToken %s %n", accessToken, refreshToken);
 
         SampleRequest.verify(accessToken);
+    }
+    
+    @Test @RunAsClient
+    public void testRememberMeAuthCode() throws Exception {
+
+
+        ExtractableResponse<Response> response = given()
+        			.redirects().follow(false)
+                            .when()
+                            .get(SampleRequest.SAMPLE_URL)
+                            .then()
+                            .statusCode(302)
+                            .header("Location", Matchers.containsString("oauth/api/auth"))
+                            .extract();
+                            ;
+
+        // redirect zum IDP
+        String location = response.header("Location");
+
+        given()
+                .when()
+                .get(location)
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("Hello, please log in"))
+                ;
+
+
+        response = given()
+        		.formParam("j_username", "jduke")
+        		.formParam("j_password", "1234")
+                .when()
+                .post(location)
+                .then()
+                .statusCode(302)
+                .extract()
+                
+        ;
+
+        Map<String, String> rememberCookie = response.cookies();
+        URL idpUrl = new URL(location);
+        
+        response = given()
+        		.log().all()
+        	.redirects().follow(false)
+        	.cookies(rememberCookie)
+	        .when()
+	        .urlEncodingEnabled(false)
+	        .get(location)
+	        .then()
+	        .statusCode(302).extract()
+	        ;
+        
+        location = response.header("Location");
+        assertTrue(location.contains("?code="));
+        String authCode = location.substring(location.indexOf("?") + 6);
+
+        response = given()
+        		.authentication().basic("sample", "password")
+            .contentType("application/x-www-form-urlencoded")
+                   .formParam("grant_type", "authorization_code")
+                   .formParam("code", authCode)
+                   .formParam("redirect_uri", SampleRequest.SAMPLE_URL)
+                   .formParam("client_id", "sample")
+                   .when()
+                   .post(String.format("http://%s:%d/oauth/api/token", idpUrl.getHost(), idpUrl.getPort()))
+                   .then()
+                   .statusCode(200)
+                   .body("access_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                   .body("refresh_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                   .body("expires_in", Matchers.not(Matchers.isEmptyOrNullString()))
+                   .body("token_type", Matchers.is("Bearer"))
+                   .header("Pragma", "no-cache")
+                   .header("Cache-Control", "no-store")
+                   .extract()
+                   ;
+
+        ;
+
+        String accessToken = response.jsonPath().get("access_token");
+        String refreshToken = response.jsonPath().get("refresh_token");
+
+        System.out.printf("accessToken %s refreshToken %s %n", accessToken, refreshToken);
+
+        SampleRequest.verify(accessToken);
+    }
+    
+    @Test @RunAsClient
+    public void testAuthCodeTwiceUsage() throws Exception {
+    	URL idpUrl = new URL(SampleRequest.SAMPLE_URL);
+        String authCode = retrieveAuthCode();
+
+        given()
+        	.authentication().basic("sample", "password")
+            .contentType("application/x-www-form-urlencoded")
+                   .formParam("grant_type", "authorization_code")
+                   .formParam("code", authCode)
+                   .formParam("redirect_uri", SampleRequest.SAMPLE_URL)
+                   .formParam("client_id", "sample")
+                   .when()
+                   .post(String.format("http://%s:%d/oauth/api/token", idpUrl.getHost(), idpUrl.getPort()))
+                   .then()
+                   .statusCode(200)
+                   .body("access_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                   .body("refresh_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                   .body("expires_in", Matchers.not(Matchers.isEmptyOrNullString()))
+                   .body("token_type", Matchers.is("Bearer"))
+                   .header("Pragma", "no-cache")
+                   .header("Cache-Control", "no-store")
+                   ;
+
+        given()
+        .authentication().basic("sample", "password")
+        .contentType("application/x-www-form-urlencoded")
+               .formParam("grant_type", "authorization_code")
+               .formParam("code", authCode)
+               .formParam("redirect_uri", SampleRequest.SAMPLE_URL)
+               .formParam("client_id", "sample")
+               .when()
+               .post(String.format("http://%s:%d/oauth/api/token", idpUrl.getHost(), idpUrl.getPort()))
+               .then()
+               .statusCode(400);
 
     }
+    
+    @Test @RunAsClient
+    public void testInvaidRedirectUriForCode() throws Exception {
+        String authCode = retrieveAuthCode();
+
+        URL idpUrl = new URL(SampleRequest.SAMPLE_URL);
+        given()
+        	.authentication().basic("sample", "password")
+            .contentType("application/x-www-form-urlencoded")
+                   .formParam("grant_type", "authorization_code")
+                   .formParam("code", authCode)
+                   .formParam("redirect_uri", SampleRequest.SAMPLE_URL + "&somethingelse")
+                   .formParam("client_id", "sample")
+                   .when()
+                   .post(String.format("http://%s:%d/oauth/api/token", idpUrl.getHost(), idpUrl.getPort()))
+                   .then()
+                   .statusCode(400)
+                   ;
+
+    }
+    
+    @Test @RunAsClient
+    public void testInvaidClientIdForCode() throws Exception {
+        String authCode = retrieveAuthCode();
+
+        URL idpUrl = new URL(SampleRequest.SAMPLE_URL);
+        given()
+        	.authentication().basic("otherClient", "password")
+            .contentType("application/x-www-form-urlencoded")
+                   .formParam("grant_type", "authorization_code")
+                   .formParam("code", authCode)
+                   .formParam("redirect_uri", SampleRequest.SAMPLE_URL + "&somethingelse")
+                   .formParam("client_id", "wrongClintId")
+                   .when()
+                   .post(String.format("http://%s:%d/oauth/api/token", idpUrl.getHost(), idpUrl.getPort()))
+                   .then()
+                   .statusCode(400)
+                   ;
+
+    }
+
+	private String retrieveAuthCode() {
+		ExtractableResponse<Response> response = given()
+        			.redirects().follow(false)
+                            .when()
+                            .get(SampleRequest.SAMPLE_URL)
+                            .then()
+                            .statusCode(302)
+                            .header("Location", Matchers.containsString("oauth/api/auth"))
+                            .extract();
+                            ;
+
+        // redirect zum IDP
+        String location = response.header("Location");
+
+        given()
+                .when()
+                .get(location)
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("Hello, please log in"))
+                ;
+
+
+        response = given()
+        		.formParam("j_username", "test")
+        		.formParam("j_password", "1234")
+                .when()
+                .urlEncodingEnabled(false)
+                .post(location)
+                .then().statusCode(302)
+                .extract()
+                
+        ;
+
+        location = response.header("Location");
+
+        assertTrue(location.contains("?code="));
+
+        String authCode = location.substring(location.indexOf("?") + 6);
+		return authCode;
+	}
 }

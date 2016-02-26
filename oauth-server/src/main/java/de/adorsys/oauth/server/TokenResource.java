@@ -20,6 +20,8 @@ import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
 import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.OAuth2Error;
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.RefreshTokenGrant;
 import com.nimbusds.oauth2.sdk.TokenErrorResponse;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
@@ -31,6 +33,11 @@ import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -84,13 +91,20 @@ public class TokenResource {
     @POST
     @Consumes("application/x-www-form-urlencoded")
     public void token() throws Exception {
-        TokenRequest request = TokenRequest.parse(FixedServletUtils.createHTTPRequest(servletRequest));
+        TokenRequest request;
+		try {
+			request = TokenRequest.parse(FixedServletUtils.createHTTPRequest(servletRequest));
+		} catch (ParseException e) {
+			ServletUtils.applyHTTPResponse(
+                    new TokenErrorResponse(OAuth2Error.UNSUPPORTED_GRANT_TYPE).toHTTPResponse(), servletResponse);
+			return;
+		}
         LOG.info("tokenRequest {}", request);
 
         AuthorizationGrant authorizationGrant = request.getAuthorizationGrant();
 
         if (authorizationGrant.getType() == GrantType.AUTHORIZATION_CODE) {
-            doAuthorizationCodeGrantFlow(authorizationGrant);
+            doAuthorizationCodeGrantFlow(request);
             return;
         }
 
@@ -98,17 +112,46 @@ public class TokenResource {
             doResourceOwnerPasswordCredentialFlow(request);
             return;
         }
+        
+        if (authorizationGrant.getType() == GrantType.REFRESH_TOKEN) {
+            doRefreshTokenGrantFlow(request);
+            return;
+        }
 
          ServletUtils.applyHTTPResponse(
                     new TokenErrorResponse(OAuth2Error.UNSUPPORTED_GRANT_TYPE).toHTTPResponse(), servletResponse);
     }
 
-    private void doAuthorizationCodeGrantFlow(AuthorizationGrant authorizationGrant) throws Exception  {
-        AuthorizationCodeGrant authorizationCodeGrant = (AuthorizationCodeGrant) authorizationGrant;
+    private void doRefreshTokenGrantFlow(TokenRequest request) throws IOException {
+    	RefreshTokenGrant refreshTokenGrant = (RefreshTokenGrant) request.getAuthorizationGrant();
+    	
+    	RefreshTokenAndMetadata refreshTokeMetadata = tokenStore.findRefreshToken(refreshTokenGrant.getRefreshToken());
+    	if (refreshTokeMetadata == null || !refreshTokeMetadata.getClientId().equals(request.getClientAuthentication().getClientID())) {
+    		ServletUtils.applyHTTPResponse(
+                    new TokenErrorResponse(OAuth2Error.INVALID_GRANT).toHTTPResponse(),
+                    servletResponse);
+    	}
+    	
+    	BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
+    	tokenStore.remove(refreshTokeMetadata.getRefreshToken().getValue(), refreshTokeMetadata.getClientId());
+		tokenStore.addAccessToken(accessToken, refreshTokeMetadata.getUserInfo(), refreshTokeMetadata.getClientId(), refreshTokeMetadata.getRefreshToken());
+		RefreshToken refreshToken = new RefreshToken();
+		tokenStore.addRefreshToken(refreshToken,  refreshTokeMetadata.getUserInfo(), refreshTokeMetadata.getClientId(), refreshTokeMetadata.getLoginSession());
 
-        AccessToken accessToken = tokenStore.load(authorizationCodeGrant.getAuthorizationCode());
+		ServletUtils.applyHTTPResponse(
+                new AccessTokenResponse(new Tokens(accessToken, refreshToken)).toHTTPResponse(),
+                servletResponse);
+	}
 
-        if (accessToken == null) {
+	private void doAuthorizationCodeGrantFlow(TokenRequest request) throws Exception  {
+        AuthorizationCodeGrant authorizationCodeGrant = (AuthorizationCodeGrant) request.getAuthorizationGrant();
+
+        AuthCodeAndMetadata authCodeMetadata = tokenStore.consumeAuthCode(authorizationCodeGrant.getAuthorizationCode());
+
+        if (authCodeMetadata == null ||
+        		!authCodeMetadata.getClientId().equals(request.getClientAuthentication().getClientID()) ||
+        		!authCodeMetadata.getRedirectURI().equals(servletRequest.getParameter("redirect_uri"))
+        		) {
             LOG.info("tokenRequest: invalid grant {}", authorizationCodeGrant.getAuthorizationCode());
             ServletUtils.applyHTTPResponse(
                     new TokenErrorResponse(OAuth2Error.INVALID_GRANT).toHTTPResponse(),
@@ -116,15 +159,26 @@ public class TokenResource {
             return;
         }
 
-        RefreshToken refreshToken = new RefreshToken();
-        UserInfo userInfo = tokenStore.loadUserInfo(accessToken.getValue());
+        //Every auth flow must create new refresh token
+//        RefreshToken refreshToken = tokenStore.findRefreshToken(authCodeMetadata.getLoginSession());
+//        if (refreshToken == null) {
+//        	refreshToken = new RefreshToken();
+//			tokenStore.addRefreshToken(refreshToken, authCodeMetadata.getUserInfo(), authCodeMetadata.getClientId(), authCodeMetadata.getLoginSession());
+//        }
 
-        tokenStore.add(refreshToken, userInfo);
+        RefreshToken refreshToken = new RefreshToken();
+        tokenStore.addRefreshToken(refreshToken, authCodeMetadata.getUserInfo(), authCodeMetadata.getClientId(), authCodeMetadata.getLoginSession());
+
+        BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
+
+        tokenStore.addAccessToken(accessToken, authCodeMetadata.getUserInfo(), authCodeMetadata.getClientId(), refreshToken);
 
         LOG.info("accessToken {}", accessToken.toJSONString());
 
-        ServletUtils.applyHTTPResponse(
-                new AccessTokenResponse(new Tokens(accessToken, refreshToken)).toHTTPResponse(),
+        Map<String, Object> customParameters = new HashMap<>();
+        customParameters.put("login_session", authCodeMetadata.getLoginSession().getValue());
+		ServletUtils.applyHTTPResponse(
+                new AccessTokenResponse(new Tokens(accessToken, refreshToken), customParameters).toHTTPResponse(),
                 servletResponse);
     }
 
@@ -132,13 +186,15 @@ public class TokenResource {
         UserInfo userInfo = userInfoFactory.createUserInfo(servletRequest);
         LOG.debug(userInfo.toJSONObject().toJSONString());
 
+        RefreshToken refreshToken = new RefreshToken();
+        LOG.info("request.getClientAuthentication() {}", request.getClientAuthentication());
+		tokenStore.addRefreshToken(refreshToken, userInfo, request.getClientAuthentication().getClientID(), null);
+
         BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
 
         LOG.info("resourceOwnerPasswordCredentialFlow {}", accessToken.toJSONString());
 
-        tokenStore.add(accessToken, userInfo);
-        RefreshToken refreshToken = new RefreshToken();
-        tokenStore.add(refreshToken, userInfo);
+        tokenStore.addAccessToken(accessToken, userInfo, request.getClientAuthentication().getClientID(), refreshToken);
 
         LOG.info("accessToken {}", accessToken.toJSONString());
 

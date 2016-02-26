@@ -15,6 +15,8 @@
  */
 package de.adorsys.oauth.tokenstore.jpa;
 
+import com.nimbusds.oauth2.sdk.id.ClientID;
+import de.adorsys.oauth.server.LoginSessionToken;
 import net.minidev.json.JSONObject;
 
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
@@ -27,15 +29,9 @@ import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Lob;
-import javax.persistence.NamedQueries;
-import javax.persistence.NamedQuery;
-import javax.persistence.PrePersist;
-import javax.persistence.Table;
+import javax.persistence.*;
 
 /**
  * TokenEntity
@@ -44,12 +40,12 @@ import javax.persistence.Table;
 @Entity
 @Table(name = "TOKEN_ENTITY")
 @NamedQueries({
-    @NamedQuery(name = TokenEntity.FIND_ACCESSTOKEN, query = "select t from TokenEntity t where t.authCode = ?1")
+    @NamedQuery(name = TokenEntity.FIND_REFRESHTOKEN, query = "select t from TokenEntity t where t.loginSession = :loginSession")
 })
 @SuppressWarnings({"FieldCanBeLocal", "unused"})
 public class TokenEntity {
-    
-    static final String FIND_ACCESSTOKEN = "FIND_ACCESSTOKEN";
+
+    static final String FIND_REFRESHTOKEN = "FIND_REFRESHTOKEN";
 
     @Id
     @Column(name = "ID")
@@ -68,13 +64,23 @@ public class TokenEntity {
     @Column(name = "EXPIRES")
     private Date expires;
 
-    @Column(name = "AUTH_CODE")
-    private String authCode;
+    @Column(name = "CLIENT_ID")
+    private String clientId;
+
+    @Column(name = "LOGIN_SESSION")
+    private String loginSession;
+
+    @ManyToOne
+    private TokenEntity refreshToken;
+
+    @OneToMany(mappedBy="refreshToken", cascade = CascadeType.REMOVE)
+    private Collection<TokenEntity> accessTokens;
+
 
     public TokenEntity() {
     }
 
-    public TokenEntity(Token token, UserInfo userInfo) {
+    public TokenEntity(Token token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId) {
         this.id    = token.getValue();
         this.token = token.toJSONObject().toJSONString();
 
@@ -87,12 +93,16 @@ public class TokenEntity {
         if (userInfo != null) {
             this.userInfo = userInfo.toJSONObject().toJSONString();
         }
+
+        if (clientId != null) {
+            this.clientId = clientId.getValue();
+        }
+
+        if (sessionId != null) {
+            this.loginSession = sessionId.getValue();
+        }
     }
 
-    public TokenEntity(Token token, UserInfo userInfo, AuthorizationCode authCode) {
-        this(token, userInfo);
-        this.authCode = authCode != null ? authCode.getValue() : null;
-    }
 
     @PrePersist
     public void onPrePersist() {
@@ -153,7 +163,15 @@ public class TokenEntity {
         return userInfo;
     }
 
-    public String getAuthCode() {
-        return authCode;
+    public void setRefreshToken(TokenEntity refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public ClientID getClientId() {
+        return new ClientID(clientId);
+    }
+
+    public LoginSessionToken getLoginSession() {
+        return new LoginSessionToken(loginSession);
     }
 }

@@ -15,6 +15,11 @@
  */
 package de.adorsys.oauth.tokenstore.jpa;
 
+import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
+import de.adorsys.oauth.server.AuthCodeAndMetadata;
+import de.adorsys.oauth.server.LoginSessionToken;
+import de.adorsys.oauth.server.RefreshTokenAndMetadata;
 import de.adorsys.oauth.server.TokenStore;
 
 import org.slf4j.Logger;
@@ -23,14 +28,12 @@ import org.slf4j.LoggerFactory;
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
-import com.nimbusds.oauth2.sdk.token.Token;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 import javax.ejb.Stateless;
-import javax.persistence.Cache;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.TypedQuery;
+import javax.persistence.*;
+import java.net.URI;
+import java.util.List;
 
 /**
  * JpaTokenStore
@@ -45,23 +48,58 @@ public class JpaTokenStore implements TokenStore {
     private EntityManager entityManager;
 
     @Override
-    public String add(Token token, UserInfo userInfo, AuthorizationCode authCode) {
-        entityManager.persist(new TokenEntity(token, userInfo, authCode));
-        return token.getValue();
-    }
-
-    @Override
-    public String add(Token token, UserInfo userInfo) {
-        entityManager.persist(new TokenEntity(token, userInfo));
-        return token.getValue();
-    }
-
-    @Override
-    public void remove(String id) {
-        TokenEntity tokenEntity = entityManager.getReference(TokenEntity.class, id);
-        if (tokenEntity != null) {
-            entityManager.remove(tokenEntity);
+    public RefreshTokenAndMetadata findRefreshToken(RefreshToken refreshToken) {
+        if (refreshToken == null || refreshToken.getValue() == null) {
+            return null;
         }
+
+        TokenEntity refreshTokenEntity = entityManager.find(TokenEntity.class, refreshToken.getValue());
+        if (refreshTokenEntity != null) {
+            return new RefreshTokenAndMetadata(refreshTokenEntity.asRefreshToken(), refreshTokenEntity.getUserInfo(), refreshTokenEntity.getClientId(), refreshTokenEntity.getLoginSession());
+        }
+
+        return null;
+    }
+
+    @Override
+    public void addAuthCode(AuthorizationCode code, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId, URI redirectUri) {
+        AuthCodeEntity authCodeEntity = new AuthCodeEntity(code, userInfo, clientId, sessionId, redirectUri);
+        entityManager.persist(authCodeEntity);
+        entityManager.flush();
+    }
+
+    @Override
+    public void addRefreshToken(RefreshToken token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId) {
+        TokenEntity tokenEntity = new TokenEntity(token, userInfo, clientId, sessionId);
+        entityManager.persist(tokenEntity);
+    }
+
+    @Override
+    public void addAccessToken(BearerAccessToken token, UserInfo userInfo, ClientID clientId, RefreshToken refreshToken) {
+        TokenEntity tokenEntity = new TokenEntity(token, userInfo, clientId, null);
+
+        if (refreshToken != null) {
+            TokenEntity refreshTokenEntity = entityManager.find(TokenEntity.class, refreshToken.getValue());
+            tokenEntity.setRefreshToken(refreshTokenEntity);
+        }
+
+        entityManager.persist(tokenEntity);
+    }
+
+    @Override
+    public void remove(String id, ClientID clientId) {
+        TokenEntity tokenEntity = entityManager.find(TokenEntity.class, id);
+
+        if (tokenEntity == null) {
+            LOG.warn("Attempt to delete not existing token: " + id);
+            return;
+        }
+
+        if (clientId != null && !clientId.equals(tokenEntity.getClientId())) {
+            LOG.warn("clientIds are different: " + clientId + " vs. " + tokenEntity.getClientId());
+        }
+
+        entityManager.remove(tokenEntity);
     }
 
     @Override
@@ -77,28 +115,84 @@ public class JpaTokenStore implements TokenStore {
     }
 
     @Override
-    public AccessToken load(AuthorizationCode authCode) {
-        TypedQuery<TokenEntity> query = entityManager.createNamedQuery(TokenEntity.FIND_ACCESSTOKEN, TokenEntity.class);
-        query.setParameter(1, authCode.getValue());
-        try {
-            TokenEntity entity = query.getSingleResult();
-            return entity.asAccessToken();
-        } catch (Exception e) {
-            LOG.error("no token available for {}", authCode.getValue());
-        }
-        return null;
-    }
+    public AuthCodeAndMetadata consumeAuthCode(AuthorizationCode authCode) {
+        String authCodeId = authCode.getValue();
+        AuthCodeEntity authCodeEntity = entityManager.find(AuthCodeEntity.class, authCodeId);
 
-    @Override
-    public RefreshToken loadRefreshToken(String id) {
-        TokenEntity tokenEntity = entityManager.find(TokenEntity.class, id);
-        return tokenEntity == null ? null : tokenEntity.asRefreshToken();
+        if (authCodeEntity == null) {
+            return null;
+        }
+
+        AuthCodeAndMetadata authCodeAndMetadata = new AuthCodeAndMetadata(
+                authCodeEntity.getRedirectUri(),
+                authCodeEntity.getUserInfo(),
+                new ClientID(authCodeEntity.getClientId()),
+                new LoginSessionToken(authCodeEntity.getLoginSession()));
+
+        entityManager.remove(authCodeEntity);
+
+        return authCodeAndMetadata;
     }
 
     @Override
     public boolean isValid(String id) {
         TokenEntity tokenEntity = entityManager.find(TokenEntity.class, id);
         return tokenEntity != null && tokenEntity.isValid();
+    }
+
+    @Override
+    public void addLoginSession(LoginSessionToken sessionId, UserInfo userInfo) {
+        LoginSessionEntity loginSessionEntity = new LoginSessionEntity(sessionId, userInfo);
+        entityManager.persist(loginSessionEntity);
+    }
+
+    @Override
+    public UserInfo loadUserInfoFromLoginSession(LoginSessionToken sessionId) {
+        if (sessionId == null) {
+            return null;
+        }
+
+        LoginSessionEntity loginSessionEntity = entityManager.find(LoginSessionEntity.class, sessionId.getValue());
+        if (loginSessionEntity != null) {
+            return loginSessionEntity.getUserInfo();
+        }
+        return null;
+    }
+
+    @Override
+    public void removeLoginSession(LoginSessionToken sessionId) {
+        LoginSessionEntity loginSessionEntity = entityManager.find(LoginSessionEntity.class, sessionId.getValue());
+        entityManager.remove(loginSessionEntity);
+    }
+
+    @Override
+    public void remove(LoginSessionToken loginSessionToken) {
+        TypedQuery<TokenEntity> query = entityManager.createNamedQuery(TokenEntity.FIND_REFRESHTOKEN, TokenEntity.class);
+        query.setParameter("loginSession", loginSessionToken.getValue());
+
+        for (TokenEntity tokenEntity : query.getResultList()) {
+            entityManager.remove(tokenEntity);
+        }
+    }
+
+    @Override
+    public boolean isValid(LoginSessionToken loginSessionToken) {
+        LoginSessionEntity loginSessionEntity = entityManager.find(LoginSessionEntity.class, loginSessionToken.getValue());
+
+        if (loginSessionEntity == null) {
+            return false;
+        }
+
+        return loginSessionEntity.getValid();
+    }
+
+    @Override
+    public void invalidateLoginSession(LoginSessionToken loginSessionToken) {
+        LoginSessionEntity loginSessionEntity = entityManager.find(LoginSessionEntity.class, loginSessionToken.getValue());
+
+        if (loginSessionEntity != null) {
+            loginSessionEntity.setValid(false);
+        }
     }
 
     @Override

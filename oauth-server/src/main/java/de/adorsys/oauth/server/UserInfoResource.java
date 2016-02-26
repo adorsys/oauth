@@ -27,8 +27,10 @@ import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
@@ -50,9 +52,23 @@ public class UserInfoResource {
     @Context
     private HttpServletResponse servletResponse;
 
+    @Context
+    private ServletContext servletContext;
+
     @SuppressWarnings("unused")
     @Inject
     private TokenStore tokenStore;
+
+    private Long cachemaxage;
+
+    @PostConstruct
+    public void postConstruct() {
+        try {
+            cachemaxage = Long.valueOf(servletContext.getInitParameter("cachemaxage"));
+            LOG.info("cachemaxage {}", cachemaxage);
+        } catch (Exception e) {
+        }
+    }
 
     @GET
     public void userInfo() throws Exception {
@@ -82,9 +98,10 @@ public class UserInfoResource {
         }
 
         long lifeTime = tokenStore.load(accessToken.getValue()).getLifetime();
+        long cacheLiveTime = cachemaxage != null ? cachemaxage : lifeTime;
 
         HTTPResponse httpResponse = new UserInfoSuccessResponse(userInfo).toHTTPResponse();
-        httpResponse.setCacheControl("s-maxage=" + lifeTime);
+        httpResponse.setCacheControl("s-maxage=" + cacheLiveTime);
 
         ServletUtils.applyHTTPResponse(httpResponse, servletResponse);
 

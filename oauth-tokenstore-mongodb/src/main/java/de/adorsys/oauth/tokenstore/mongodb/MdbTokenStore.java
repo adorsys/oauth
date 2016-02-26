@@ -15,27 +15,42 @@
  */
 package de.adorsys.oauth.tokenstore.mongodb;
 
+import de.adorsys.oauth.server.LoginSessionToken;
+import de.adorsys.oauth.server.RefreshTokenAndMetadata;
+import de.adorsys.oauth.server.AuthCodeAndMetadata;
 import de.adorsys.oauth.server.TokenStore;
+import net.minidev.json.JSONObject;
 
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.DeleteResult;
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
+import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
+import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
 import com.nimbusds.oauth2.sdk.token.Token;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
+import java.net.URI;
+import java.util.Date;
+import java.util.Map;
+
+import javax.annotation.PostConstruct;
 import javax.ejb.Stateless;
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 /**
  * MdbTokenStore
  */
-@Stateless
+@Singleton
 @SuppressWarnings("unused")
 public class MdbTokenStore implements TokenStore {
 
@@ -46,58 +61,153 @@ public class MdbTokenStore implements TokenStore {
     @Inject
     private MongoDatabase mongoDb;
 
-    @Override
-    public String add(Token token, UserInfo userInfo, AuthorizationCode authCode) {
-        Document document = new TokenDocument(token, userInfo, authCode).asDocument();
-        mongoDb.getCollection(COLLECTION_NAME).insertOne(document);
-        return token.getValue();
-    }
+	private MongoCollection<Document> collection;
+
+	private MongoCollection<Document> authCodeCollection;
+
+    private MongoCollection<Document> loginSessionCollection;
+    
+    @PostConstruct
+    void initCollection() {
+    	collection = mongoDb.getCollection(COLLECTION_NAME);
+    	authCodeCollection = mongoDb.getCollection("authCode");
+        loginSessionCollection = mongoDb.getCollection("loginSession");
+	}
+    
+	@Override
+	public void addAuthCode(AuthorizationCode code, UserInfo userInfo, ClientID clientId,
+			LoginSessionToken sessionId, URI redirectUri) {
+		Document document = new Document("_id", code.getValue())
+				.append("created", new Date())
+				.append("expires", new Date(System.currentTimeMillis() + 60000))
+				.append("userInfo", userInfo.toJSONObject())
+				.append("clientId", clientId.getValue())
+				.append("loginSession", sessionId.getValue())
+				.append("redirectUri", redirectUri.toString());
+		authCodeCollection.insertOne(document);
+	}
+
+    
+	@Override
+	public void addRefreshToken(RefreshToken token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId) {
+		TokenDocument<RefreshToken> tokenDocument = new TokenDocument<RefreshToken>(token, new Date(), clientId, sessionId, userInfo);
+		Document document = tokenDocument.asDocument();
+        collection.insertOne(document);
+	}
+
+	@Override
+	public void addAccessToken(BearerAccessToken token, UserInfo userInfo, ClientID clientId, RefreshToken refreshToken) {
+		TokenDocument<BearerAccessToken> tokenDocument = new TokenDocument<BearerAccessToken>(token, new Date(), clientId, null, userInfo);
+		if (refreshToken != null) {
+			tokenDocument.setRefreshTokenRef(refreshToken.getValue());
+		}
+		Document document = tokenDocument.asDocument();
+        collection.insertOne(document);
+	}
+
 
     @Override
-    public String add(Token token, UserInfo userInfo) {
-        Document document = new TokenDocument(token, userInfo).asDocument();
-        mongoDb.getCollection(COLLECTION_NAME).insertOne(document);
-        return token.getValue();
-    }
-
-    @Override
-    public void remove(String id) {
-        DeleteResult result = mongoDb.getCollection(COLLECTION_NAME).deleteOne(new Document().append("_id", id));
-        LOG.debug("delete {} : {} documents", id, result.getDeletedCount());
+    public void remove(String id, ClientID clientId) {
+        DeleteResult result = collection.deleteOne(new Document("_id", id).append("clientId", clientId.getValue()));
+        LOG.debug("delete {} : {} tokens", id, result.getDeletedCount());
+        result = collection.deleteMany(new Document("refreshTokenRef", id).append("clientId", clientId.getValue()));
+        LOG.debug("delete {} : {} access tokens", id, result.getDeletedCount());
     }
 
     @Override
     public AccessToken load(String id) {
-        Document document = mongoDb.getCollection(COLLECTION_NAME).find(new Document().append("_id", id)).first();
-        return document == null ? null : TokenDocument.from(document).asAccessToken();
-    }
-
-    @Override
-    public AccessToken load(AuthorizationCode authCode) {
-        Document document = mongoDb.getCollection(COLLECTION_NAME).find(new Document().append("authCode", authCode.getValue())).first();
-        return document == null ? null : TokenDocument.from(document).asAccessToken();
-    }
-
-    @Override
-    public RefreshToken loadRefreshToken(String id) {
-        Document document = mongoDb.getCollection(COLLECTION_NAME).find(new Document().append("_id", id)).first();
-        return document == null ? null : TokenDocument.from(document).asRefreshToken();
+        Document document = collection.find(new Document().append("_id", id)).first();
+        return document == null ? null : (AccessToken) TokenDocument.from(document).getToken();
     }
 
     @Override
     public boolean isValid(String id) {
-        Document document = mongoDb.getCollection(COLLECTION_NAME).find(new Document().append("_id", id)).first();
+        Document document = collection.find(new Document().append("_id", id)).first();
         return document != null && TokenDocument.from(document).isValid();
     }
 
     @Override
+    public void addLoginSession(LoginSessionToken sessionId, UserInfo userInfo) {
+        Document document = new Document("_id", sessionId.getValue())
+                .append("created", new Date())
+                .append("userInfo", userInfo.toJSONObject())
+                .append("valid", Boolean.TRUE);
+        loginSessionCollection.insertOne(document);
+    }
+
+    @Override
+    public UserInfo loadUserInfoFromLoginSession(LoginSessionToken sessionId) {
+        Document document = loginSessionCollection.find(new Document().append("_id", sessionId.getValue())).first();
+        if (document == null) {
+            return null;
+        }
+        return new UserInfo(new JSONObject((Map<String, ?>) document.get("userInfo")));
+    }
+
+    @Override
+    public void removeLoginSession(LoginSessionToken sessionId) {
+        DeleteResult result = loginSessionCollection.deleteOne(new Document().append("_id", sessionId.getValue()));
+        LOG.debug("delete {} : {} session", sessionId.getValue(), result.getDeletedCount());
+    }
+
+    @Override
+    public void remove(LoginSessionToken loginSessionToken) {
+        FindIterable<Document> refreshTokens = collection.find(new Document("sessionId", loginSessionToken.getValue()));
+        for (Document refreshToken : refreshTokens) {
+            String refreshTokenId = refreshToken.getString("_id");
+            DeleteResult result = collection.deleteMany(new Document("refreshTokenRef", refreshTokenId));
+            LOG.debug("delete login session {} : {} access tokens", loginSessionToken.getValue(), result.getDeletedCount());
+        }
+        DeleteResult result2 = collection.deleteMany(new Document("sessionId", loginSessionToken.getValue()));
+        LOG.debug("delete login session {} : {} refresh tokens", loginSessionToken.getValue(), result2.getDeletedCount());
+    }
+
+    @Override
+    public boolean isValid(LoginSessionToken loginSessionToken) {
+        Document document = loginSessionCollection.find(new Document().append("_id", loginSessionToken.getValue())).first();
+        if (document == null) {
+            return false;
+        }
+        return document.getBoolean("valid") != null ? document.getBoolean("valid") : false;
+    }
+
+    @Override
+    public void invalidateLoginSession(LoginSessionToken loginSessionToken) {
+        loginSessionCollection.updateOne(new Document().append("_id", loginSessionToken.getValue()),
+                new Document("$set", new Document("valid", Boolean.FALSE)));
+    }
+
+    @Override
     public UserInfo loadUserInfo(String id) {
-        Document document = mongoDb.getCollection(COLLECTION_NAME).find(new Document().append("_id", id)).first();
+        Document document = collection.find(new Document().append("_id", id)).first();
         return document == null ? null : TokenDocument.from(document).getUserInfo();
     }
 
     void setMongoDb(MongoDatabase mongoDb) {
         this.mongoDb = mongoDb;
     }
+
+	@Override
+	public AuthCodeAndMetadata consumeAuthCode(AuthorizationCode authCode) {
+		Document document = authCodeCollection.findOneAndDelete(new Document("_id", authCode.getValue()));
+		if (document == null) {
+			return null;
+		}
+		return new AuthCodeAndMetadata(
+				document.getString("redirectUri"), 
+				new UserInfo(new JSONObject((Map<String, ?>) document.get("userInfo"))),
+				new ClientID(document.getString("clientId")), 
+				new LoginSessionToken(document.getString("loginSession")));
+	}
+
+	@Override
+	public RefreshTokenAndMetadata findRefreshToken(RefreshToken refreshToken) {
+		Document document = collection.find(new Document("_id", refreshToken.getValue())).first();
+		if (document != null) {
+			TokenDocument<RefreshToken> tokenDoc = TokenDocument.from(document);
+			return new RefreshTokenAndMetadata(tokenDoc.getToken(), tokenDoc.getUserInfo(), tokenDoc.getClientId(), tokenDoc.getSessionId());
+		}
+		return null;
+	}
 
 }
