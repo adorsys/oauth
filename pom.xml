@@ -21,7 +21,7 @@
 
   <groupId>de.adorsys.oauth</groupId>
   <artifactId>oauth-parent</artifactId>
-  <version>0.13-SNAPSHOT</version>
+  <version>0.13</version>
   <packaging>pom</packaging>
   <name>OAuth JEE Component</name>
   <description>oauth components for ee-server (currently only JBoss)</description>
@@ -57,7 +57,7 @@
     <connection>scm:git@github.com:adorsys/oauth.git</connection>
     <developerConnection>scm:git:git@github.com:adorsys/oauth.git</developerConnection>
     <url>git@github.com:adorsys/oauth.git</url>
-    <tag>HEAD</tag>
+    <tag>oauth-parent-0.13</tag>
   </scm>
   <licenses>
     <license>
