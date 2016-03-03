@@ -22,8 +22,11 @@ import org.slf4j.LoggerFactory;
 
 import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.GrantType;
+import com.nimbusds.oauth2.sdk.OAuth2Error;
 import com.nimbusds.oauth2.sdk.ResourceOwnerPasswordCredentialsGrant;
+import com.nimbusds.oauth2.sdk.TokenErrorResponse;
 import com.nimbusds.oauth2.sdk.TokenRequest;
+import com.nimbusds.oauth2.sdk.http.ServletUtils;
 
 import de.adorsys.oauth.authdispatcher.FixedServletUtils;
 
@@ -60,8 +63,12 @@ public class ResourceOwnerPasswordCredentialFlowValve extends ValveBase {
 
         Principal principal = getContainer().getRealm().authenticate(userName, password);
         request.setUserPrincipal(principal);
-
-        getNext().invoke(request, response);
+        if (principal == null) {
+        	ServletUtils.applyHTTPResponse(
+                    new TokenErrorResponse(OAuth2Error.ACCESS_DENIED).toHTTPResponse(), response);
+        } else {
+        	getNext().invoke(request, response);
+        }
     }
 
     /**
