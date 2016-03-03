@@ -114,4 +114,26 @@ public class TestPasswordFlow {
                 .statusCode(400)
                 ;
     }
+    
+    @Test @RunAsClient
+    public void testResourceOwnerPasswordFlowWrongResourceOwnerCredentials() throws Exception {
+    	RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+
+        given()
+        		.redirects().follow(false)
+                .contentType("application/x-www-form-urlencoded")
+                .authentication().basic("sample", "password")
+                .formParam("grant_type", "password")
+                .formParam("username", "jduke")
+                .formParam("password", "wrong")
+                .when()
+                .post(SampleRequest.TOKEN_ENDPOINT)
+                .then()
+                .statusCode(403)
+                .body("error", Matchers.equalTo("access_denied"))
+                .header("Pragma", "no-cache")
+                .header("Cache-Control", "no-store")
+                .extract().response()
+                ;
+    }
 }
