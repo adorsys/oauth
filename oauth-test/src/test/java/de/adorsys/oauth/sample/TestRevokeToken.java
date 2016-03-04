@@ -15,10 +15,9 @@
  */
 package de.adorsys.oauth.sample;
 
-import static com.jayway.restassured.RestAssured.given;
-import static org.junit.Assert.assertTrue;
-
-import java.net.URL;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.response.ExtractableResponse;
+import com.jayway.restassured.response.Response;
 
 import org.hamcrest.Matchers;
 import org.jboss.arquillian.container.test.api.Deployment;
@@ -28,16 +27,16 @@ import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.response.ExtractableResponse;
-import com.jayway.restassured.response.Response;
+import java.net.URL;
+
+import static com.jayway.restassured.RestAssured.given;
+import static org.junit.Assert.assertTrue;
 
 /**
- * TestImplicitFlow
+ * TestRevokeToken
  */
 @RunWith(Arquillian.class)
 public class TestRevokeToken {
@@ -54,26 +53,26 @@ public class TestRevokeToken {
                 .addAsWebInfResource("jboss-deployment-structure.xml")
                 ;
     }
-    
+
     @BeforeClass
     public static void setLogging(){
-    	RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
-    
+
     @Test @RunAsClient
     public void testRevokeLoginSessionToken() throws Exception {
-    	//create a token
+        //create a token
         ExtractableResponse<Response> response = given()
-        		.redirects().follow(false)
-        		.formParam("j_username", "jduke")
-        		.formParam("j_password", "1234")
+                .redirects().follow(false)
+                .formParam("j_username", "jduke")
+                .formParam("j_password", "1234")
                 .when()
                 .urlEncodingEnabled(false)
                 .post(SampleRequest.AUTH_ENDPOINT + "?response_type=code&client_id=sample&redirect_uri=" + SampleRequest.SAMPLE_URL)
                 .then().statusCode(302)
                 .extract()
-                
-        ;
+
+                ;
 
         String location = response.header("Location");
 
@@ -84,35 +83,35 @@ public class TestRevokeToken {
         String authCode = location.substring(location.indexOf("?") + 6);
 
         response = given()
-        		.log().all()
-        	.authentication().basic("sample", "password")
-            .contentType("application/x-www-form-urlencoded")
-                   .formParam("grant_type", "authorization_code")
-                   .formParam("code", authCode)
-                   .formParam("redirect_uri", SampleRequest.SAMPLE_URL)
-                   .formParam("client_id", "sample")
-                   .when()
-                   .post(String.format("http://%s:%d/oauth/api/token", idpUrl.getHost(), idpUrl.getPort()))
-                   .then()
-                   .statusCode(200)
-                   .body("access_token", Matchers.not(Matchers.isEmptyOrNullString()))
-                   .body("refresh_token", Matchers.not(Matchers.isEmptyOrNullString()))
-                   .body("login_session", Matchers.not(Matchers.isEmptyOrNullString()))
-                   .body("expires_in", Matchers.not(Matchers.isEmptyOrNullString()))
-                   .body("token_type", Matchers.is("Bearer"))
-                   .header("Pragma", "no-cache")
-                   .header("Cache-Control", "no-store")
-                   .extract()
-                   ;
-
+                .log().all()
+                .authentication().basic("sample", "password")
+                .contentType("application/x-www-form-urlencoded")
+                .formParam("grant_type", "authorization_code")
+                .formParam("code", authCode)
+                .formParam("redirect_uri", SampleRequest.SAMPLE_URL)
+                .formParam("client_id", "sample")
+                .when()
+                .post(String.format("http://%s:%d/oauth/api/token", idpUrl.getHost(), idpUrl.getPort()))
+                .then()
+                .statusCode(200)
+                .body("access_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("refresh_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("login_session", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("expires_in", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("token_type", Matchers.is("Bearer"))
+                .header("Pragma", "no-cache")
+                .header("Cache-Control", "no-store")
+                .extract()
         ;
+
+
 
         String accessToken = response.jsonPath().get("access_token");
         String loginSession = response.jsonPath().getString("login_session");
-        
+
         //revoke the token
         given()
-        		.redirects().follow(false)
+                .redirects().follow(false)
                 .contentType("application/x-www-form-urlencoded")
                 .authentication().basic("sample", "password")
                 .formParam("token", loginSession)
@@ -126,12 +125,12 @@ public class TestRevokeToken {
                 .header("Pragma", "no-cache")
                 .header("Cache-Control", "no-store")
                 .extract().response()
-                ;
-        
+        ;
+
         //redirect to login
         given()
-    	.log().ifValidationFails()
-    			.redirects().follow(false)
+                .log().ifValidationFails()
+                .redirects().follow(false)
                 .authentication().oauth2(accessToken)
                 .when()
                 .get(SampleRequest.SAMPLE_URL)
@@ -141,9 +140,9 @@ public class TestRevokeToken {
 
     @Test @RunAsClient
     public void testRevokeToken() throws Exception {
-    	//create a token
-    	Response response = given()
-        		.redirects().follow(false)
+        //create a token
+        Response response = given()
+                .redirects().follow(false)
                 .contentType("application/x-www-form-urlencoded")
                 .authentication().basic("sample", "password")
                 .formParam("grant_type", "password")
@@ -163,10 +162,10 @@ public class TestRevokeToken {
                 ;
         String accessToken = response.jsonPath().getString("access_token");
         String refreshToken = response.jsonPath().getString("refresh_token");
-        
+
         //revoke the token
         given()
-        		.redirects().follow(false)
+                .redirects().follow(false)
                 .contentType("application/x-www-form-urlencoded")
                 .authentication().basic("sample", "password")
                 .formParam("token", refreshToken)
@@ -179,12 +178,12 @@ public class TestRevokeToken {
                 .header("Pragma", "no-cache")
                 .header("Cache-Control", "no-store")
                 .extract().response()
-                ;
-        
+        ;
+
         //redirect to login
         given()
-    	.log().ifValidationFails()
-    			.redirects().follow(false)
+                .log().ifValidationFails()
+                .redirects().follow(false)
                 .authentication().oauth2(accessToken)
                 .when()
                 .get(SampleRequest.SAMPLE_URL)

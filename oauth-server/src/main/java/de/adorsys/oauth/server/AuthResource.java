@@ -40,8 +40,10 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -132,8 +134,11 @@ public class AuthResource {
         
         BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
 
+        URI location;
+
         if (request.getResponseType().impliesCodeFlow()) {
-        	if (loginSession != null) {
+
+            if (loginSession != null) {
                 // rememberme cookie exists and login session invalid => destroy
                 if (RememberMeCookieUtil.getCookieToken(servletRequest,request.getClientID()) != null && ! tokenStore.isValid(loginSession) ) {
         			servletRequest.removeAttribute("loginSession");
@@ -141,21 +146,24 @@ public class AuthResource {
                     return response.location(request.toURI()).build();
         		}
         	}
+
         	AuthorizationCode authCode = new AuthorizationCode();
             LOG.info("impliesCodeFlow {}", authCode.toJSONString());
 			tokenStore.addAuthCode(authCode, userInfo, request.getClientID(), loginSession, request.getRedirectionURI());
-			
-            return response.location(new AuthorizationSuccessResponse(request.getRedirectionURI(), authCode, null, request.getState(), request.getResponseMode()).toURI()).build();
+
+            location = new AuthorizationSuccessResponse(request.getRedirectionURI(), authCode, null, request.getState(), request.getResponseMode()).toURI();
+
+        } else {
+
+            LOG.info("impliesTokenFlow {}", accessToken.toJSONString());
+            tokenStore.addAccessToken(accessToken, userInfo, request.getClientID(), null);
+
+            location = new AuthorizationSuccessResponse(request.getRedirectionURI(), null, accessToken, request.getState(), request.getResponseMode()).toURI();
         }
 
-        LOG.info("impliesTokenFlow {}", accessToken.toJSONString());
-        tokenStore.addAccessToken(accessToken, userInfo, request.getClientID(), null);
-
-        AuthorizationSuccessResponse successResponse = new AuthorizationSuccessResponse(request.getRedirectionURI(), null, accessToken, request.getState(), request.getResponseMode());
-        String location = successResponse.toURI().toString();
         LOG.info("location {}", location);
 
-        return response.location(new URI(location)).build();
+        return response.location(location).build();
     }
 
     @GET
@@ -206,8 +214,12 @@ public class AuthResource {
 		while (parameterNames.hasMoreElements()) {
 			String param = parameterNames.nextElement();
 			String value = servletRequest.getParameter(param);
-			params.put(param, value);
-		}
+            try {
+                params.put(param, URLDecoder.decode(value, "UTF-8"));
+            } catch (UnsupportedEncodingException e) {
+                params.put(param, value);
+            }
+        }
 		return params;
 	}
 

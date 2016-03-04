@@ -105,10 +105,13 @@ public class FixedServletUtils {
 	 *                                  couldn't be read due to an I/O
 	 *                                  exception.
 	 */
-	public static HTTPRequest createHTTPRequest(final HttpServletRequest servletRequest)
-		throws IOException {
+	public static HTTPRequest createHTTPRequest(final HttpServletRequest servletRequest) {
 
-		return createHTTPRequest(servletRequest, -1);
+		try {
+			return createHTTPRequest(servletRequest, -1);
+		} catch (IOException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 

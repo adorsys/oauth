@@ -34,6 +34,23 @@
 	<login-config>
 		<realm-name>oauth-server</realm-name>
 		<auth-method>OAUTH</auth-method>
+		<form-login-config>
+			<form-login-page>/login.jsp</form-login-page>
+			<form-error-page>/login-error.jsp</form-error-page>
+		</form-login-config>
 	</login-config>
+
+	<filter-mapping>
+		<filter-name>rememberme</filter-name>
+		<url-pattern>/api/auth</url-pattern>
+	</filter-mapping>
+
+	<!-- keine session -->
+	<session-config>
+		<session-timeout>1</session-timeout>
+		<cookie-config>
+			<max-age>0</max-age>
+		</cookie-config>
+	</session-config>
 
 </web-app>

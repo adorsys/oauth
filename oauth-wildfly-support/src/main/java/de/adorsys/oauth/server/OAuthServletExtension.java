@@ -11,7 +11,7 @@ import io.undertow.servlet.api.DeploymentInfo;
 @SuppressWarnings("unused")
 public class OAuthServletExtension implements ServletExtension {
 
-    private static final String MECHANISM_NAME = "OAUTH";
+    static final String MECHANISM_NAME = "OAUTH";
 
     @Override
     public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {

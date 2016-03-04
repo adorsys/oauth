@@ -25,7 +25,6 @@ import com.nimbusds.oauth2.sdk.RefreshTokenGrant;
 import com.nimbusds.oauth2.sdk.TokenErrorResponse;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
-import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
 import com.nimbusds.oauth2.sdk.token.Tokens;
@@ -33,11 +32,6 @@ import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
@@ -49,6 +43,10 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * TokenResource
@@ -123,13 +121,16 @@ public class TokenResource {
     }
 
     private void doRefreshTokenGrantFlow(TokenRequest request) throws IOException {
-    	RefreshTokenGrant refreshTokenGrant = (RefreshTokenGrant) request.getAuthorizationGrant();
+
+        RefreshTokenGrant refreshTokenGrant = (RefreshTokenGrant) request.getAuthorizationGrant();
     	
     	RefreshTokenAndMetadata refreshTokeMetadata = tokenStore.findRefreshToken(refreshTokenGrant.getRefreshToken());
+
     	if (refreshTokeMetadata == null || !refreshTokeMetadata.getClientId().equals(request.getClientAuthentication().getClientID())) {
     		ServletUtils.applyHTTPResponse(
                     new TokenErrorResponse(OAuth2Error.INVALID_GRANT).toHTTPResponse(),
                     servletResponse);
+            return;
     	}
     	
     	BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
@@ -176,8 +177,11 @@ public class TokenResource {
         LOG.info("accessToken {}", accessToken.toJSONString());
 
         Map<String, Object> customParameters = new HashMap<>();
-        customParameters.put("login_session", authCodeMetadata.getLoginSession().getValue());
-		ServletUtils.applyHTTPResponse(
+        if (authCodeMetadata.getLoginSession() != null) {
+            customParameters.put("login_session", authCodeMetadata.getLoginSession().getValue());
+        }
+
+        ServletUtils.applyHTTPResponse(
                 new AccessTokenResponse(new Tokens(accessToken, refreshToken), customParameters).toHTTPResponse(),
                 servletResponse);
     }

@@ -15,16 +15,6 @@
  */
 package de.adorsys.oauth.tokenstore.mongodb;
 
-import de.adorsys.oauth.server.LoginSessionToken;
-import de.adorsys.oauth.server.RefreshTokenAndMetadata;
-import de.adorsys.oauth.server.AuthCodeAndMetadata;
-import de.adorsys.oauth.server.TokenStore;
-import net.minidev.json.JSONObject;
-
-import org.bson.Document;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -34,24 +24,32 @@ import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
-import com.nimbusds.oauth2.sdk.token.Token;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
+
+import de.adorsys.oauth.server.AuthCodeAndMetadata;
+import de.adorsys.oauth.server.LoginSessionToken;
+import de.adorsys.oauth.server.RefreshTokenAndMetadata;
+import de.adorsys.oauth.server.TokenStore;
+
+import org.bson.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import java.net.URI;
 import java.util.Date;
 import java.util.Map;
 
-import javax.annotation.PostConstruct;
-import javax.ejb.Stateless;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import net.minidev.json.JSONObject;
 
 /**
  * MdbTokenStore
  */
 @Singleton
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "unchecked"})
 public class MdbTokenStore implements TokenStore {
 
     private static final Logger LOG = LoggerFactory.getLogger(MdbTokenStore.class);
@@ -193,11 +191,14 @@ public class MdbTokenStore implements TokenStore {
 		if (document == null) {
 			return null;
 		}
+
+        String loginSession = document.getString("loginSession");
+
 		return new AuthCodeAndMetadata(
 				document.getString("redirectUri"), 
 				new UserInfo(new JSONObject((Map<String, ?>) document.get("userInfo"))),
-				new ClientID(document.getString("clientId")), 
-				new LoginSessionToken(document.getString("loginSession")));
+				new ClientID(document.getString("clientId")),
+                loginSession != null ? new LoginSessionToken(loginSession) : null);
 	}
 
 	@Override

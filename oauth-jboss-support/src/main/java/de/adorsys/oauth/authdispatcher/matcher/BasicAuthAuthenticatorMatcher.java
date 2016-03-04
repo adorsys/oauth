@@ -62,7 +62,7 @@ public class BasicAuthAuthenticatorMatcher extends BaseAuthenticatorMatcher {
                 return valve;
             }
         } catch (Exception e) {
-            LOG.warn("Can not load authenticator", e);
+            // ignore silent
         }
 
         return null;

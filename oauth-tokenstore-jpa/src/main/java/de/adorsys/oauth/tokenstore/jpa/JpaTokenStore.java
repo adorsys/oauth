@@ -15,8 +15,13 @@
  */
 package de.adorsys.oauth.tokenstore.jpa;
 
+import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
+import com.nimbusds.oauth2.sdk.token.RefreshToken;
+import com.nimbusds.openid.connect.sdk.claims.UserInfo;
+
 import de.adorsys.oauth.server.AuthCodeAndMetadata;
 import de.adorsys.oauth.server.LoginSessionToken;
 import de.adorsys.oauth.server.RefreshTokenAndMetadata;
@@ -25,15 +30,13 @@ import de.adorsys.oauth.server.TokenStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.nimbusds.oauth2.sdk.AuthorizationCode;
-import com.nimbusds.oauth2.sdk.token.AccessToken;
-import com.nimbusds.oauth2.sdk.token.RefreshToken;
-import com.nimbusds.openid.connect.sdk.claims.UserInfo;
-
 import javax.ejb.Stateless;
-import javax.persistence.*;
+import javax.persistence.Cache;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.TypedQuery;
+
 import java.net.URI;
-import java.util.List;
 
 /**
  * JpaTokenStore
@@ -127,7 +130,7 @@ public class JpaTokenStore implements TokenStore {
                 authCodeEntity.getRedirectUri(),
                 authCodeEntity.getUserInfo(),
                 new ClientID(authCodeEntity.getClientId()),
-                new LoginSessionToken(authCodeEntity.getLoginSession()));
+                authCodeEntity.getLoginSession() != null ? new LoginSessionToken(authCodeEntity.getLoginSession()) : null);
 
         entityManager.remove(authCodeEntity);
 

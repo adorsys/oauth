@@ -15,26 +15,22 @@
  */
 package de.adorsys.oauth.authdispatcher.matcher;
 
-import java.io.IOException;
-import java.security.Principal;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 
 import org.apache.catalina.authenticator.AuthenticatorBase;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.deploy.LoginConfig;
 import org.apache.catalina.valves.ValveBase;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.nimbusds.oauth2.sdk.AuthorizationRequest;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.security.Principal;
 
 public class RememberMeAuthMatcher extends BaseAuthenticatorMatcher {
-
-	private static final Logger LOG = LoggerFactory.getLogger(RememberMeAuthMatcher.class);
 
 	public RememberMeAuthMatcher() {
 		valve = new AuthenticatorBase() {
@@ -54,14 +50,11 @@ public class RememberMeAuthMatcher extends BaseAuthenticatorMatcher {
 
 	@Override
 	public ValveBase match(HttpServletRequest request, AuthorizationRequest authorizationRequest) {
-		if (!"/auth".equals(request.getPathInfo()) || authorizationRequest.getClientID() == null) {
+		if (!"/auth".equals(request.getPathInfo()) || authorizationRequest == null || authorizationRequest.getClientID() == null) {
 			return null;
 		}
 		Cookie cookieToken = getCookieToken(authorizationRequest.getClientID().getValue(), request);
-		if (cookieToken != null) {
-			return valve;
-		}
-		return null;
+		return cookieToken != null ? valve : null;
 	}
 	
 	private Cookie getCookieToken(String clientId, HttpServletRequest request) {

@@ -284,10 +284,6 @@
                 </security-domain>
                 <security-domain name="oauth" cache-type="default">
                   <authentication>
-                    <!-- login-module code="Identity" flag="sufficient">
-                        <module-option name="principal" value="jduke"/>
-                        <module-option name="roles" value="admin,user,oauth"/>
-                    </login-module-->
                     <login-module code="org.jboss.security.auth.spi.UsersRolesLoginModule" flag="sufficient">
                             <module-option name="usersProperties" value="${jboss.server.config.dir}/users.properties"/>
                             <module-option name="rolesProperties" value="${jboss.server.config.dir}/roles.properties"/>

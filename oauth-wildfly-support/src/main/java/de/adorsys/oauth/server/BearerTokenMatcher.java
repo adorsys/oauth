@@ -28,6 +28,7 @@ public class BearerTokenMatcher implements AuthenticatorMatcher {
     @Override
     public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
         // real token validation is done in the endpoint
+        securityContext.authenticationComplete(OAuhtAccount.INSTANCE, OAuthServletExtension.MECHANISM_NAME, false);
         return AuthenticationMechanismOutcome.AUTHENTICATED;
     }
 

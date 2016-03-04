@@ -18,19 +18,22 @@ package de.adorsys.oauth.tokenstore.jpa;
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.id.ClientID;
-import com.nimbusds.oauth2.sdk.token.AccessToken;
-import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
-import com.nimbusds.oauth2.sdk.token.RefreshToken;
-import com.nimbusds.oauth2.sdk.token.Token;
 import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
-import de.adorsys.oauth.server.LoginSessionToken;
-import net.minidev.json.JSONObject;
 
-import javax.persistence.*;
+import de.adorsys.oauth.server.LoginSessionToken;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Lob;
+import javax.persistence.PrePersist;
+import javax.persistence.Table;
+
 import java.net.URI;
-import java.util.Calendar;
 import java.util.Date;
+
+import net.minidev.json.JSONObject;
 
 /**
  * AuthCodeEntity
@@ -70,13 +73,13 @@ public class AuthCodeEntity {
 
     public AuthCodeEntity(AuthorizationCode code, UserInfo userInfo, ClientID clientId,
                           LoginSessionToken sessionId, URI redirectUri) {
-        this.id    = code.getValue();
+        this.id = code.getValue();
         if (userInfo != null) {
             this.userInfo = userInfo.toJSONObject().toJSONString();
         }
         this.clientId = clientId.getValue();
-        this.loginSession = sessionId.getValue();
-        this.redirectUri = redirectUri.toString();
+        this.loginSession = sessionId != null ? sessionId.getValue() : null;
+        this.redirectUri = redirectUri != null ? redirectUri.toString() : null;
     }
 
     @PrePersist
