@@ -15,3 +15,5 @@ target/
 oauth-server-sample/src/main/webapp/components
 oauth-server-sample/node
 oauth-server-sample/node_modules
+
+release.properties

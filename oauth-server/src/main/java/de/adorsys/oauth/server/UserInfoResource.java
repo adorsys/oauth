@@ -87,15 +87,25 @@ public class UserInfoResource {
 
         AccessToken accessToken = userInfoRequest.getAccessToken();
 
-        LOG.info("userInfo {}", accessToken.toJSONString());
-
-        UserInfo userInfo = tokenStore.loadUserInfo(accessToken.getValue());
-        if (userInfo == null) {
+        if (!tokenStore.isValid(accessToken.getValue())) {
+            LOG.info("expired token {}", accessToken.toJSONString());
             ServletUtils.applyHTTPResponse(
                     new UserInfoErrorResponse(BearerTokenError.INVALID_TOKEN).toHTTPResponse(),
                     servletResponse);
             return;
         }
+
+        UserInfo userInfo = tokenStore.loadUserInfo(accessToken.getValue());
+
+        if (userInfo == null) {
+            LOG.info("no userInfo available {}", accessToken.toJSONString());
+            ServletUtils.applyHTTPResponse(
+                    new UserInfoErrorResponse(BearerTokenError.INVALID_TOKEN).toHTTPResponse(),
+                    servletResponse);
+            return;
+        }
+
+        LOG.info("userInfo {}", accessToken.toJSONString());
 
         long lifeTime = tokenStore.load(accessToken.getValue()).getLifetime();
         long cacheLiveTime = cachemaxage != null ? cachemaxage : lifeTime;
