@@ -74,6 +74,7 @@ public class TestTokenLifetime {
         System.out.println(response.asString());
 
         String accessToken = response.jsonPath().getString("access_token");
+        String refreshToken = response.jsonPath().getString("refresh_token");
 
         int expiresIn = Integer.valueOf(response.jsonPath().getString("expires_in"));
 
@@ -88,5 +89,29 @@ public class TestTokenLifetime {
         TimeUnit.SECONDS.sleep(6);
 
         SampleRequest.verify(accessToken, "Simple Login Page");
+
+        response = given()
+                .redirects().follow(false)
+                .contentType("application/x-www-form-urlencoded")
+                .authentication().basic("sample", "password")
+                .formParam("grant_type", "refresh_token")
+                .formParam("refresh_token", refreshToken)
+                .when()
+                .post(SampleRequest.TOKEN_ENDPOINT)
+                .then()
+                .statusCode(200)
+                .body("access_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("refresh_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("expires_in", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("token_type", Matchers.is("Bearer"))
+                .header("Pragma", "no-cache")
+                .header("Cache-Control", "no-store")
+                .extract().response();
+
+        String newAccessToken = response.jsonPath().getString("access_token");
+
+        SampleRequest.verify(newAccessToken);
+
     }
+
 }
