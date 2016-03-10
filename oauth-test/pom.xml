@@ -29,6 +29,10 @@
   <artifactId>oauth-test</artifactId>
   <packaging>war</packaging>
 
+  <properties>
+    <database.type>jpa</database.type>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>javax.inject</groupId>
@@ -108,7 +112,7 @@
         </dependency>
         <dependency>
           <groupId>${project.groupId}</groupId>
-          <artifactId>oauth-tokenstore-jpa</artifactId>
+          <artifactId>oauth-tokenstore-${database.type}</artifactId>
           <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -283,7 +287,7 @@
         </dependency>
         <dependency>
           <groupId>${project.groupId}</groupId>
-          <artifactId>oauth-tokenstore-jpa</artifactId>
+          <artifactId>oauth-tokenstore-${database.type}</artifactId>
           <version>${project.version}</version>
         </dependency>
         <dependency>
