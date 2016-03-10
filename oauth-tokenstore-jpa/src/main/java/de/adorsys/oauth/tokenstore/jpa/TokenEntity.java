@@ -15,12 +15,10 @@
  */
 package de.adorsys.oauth.tokenstore.jpa;
 
-import com.nimbusds.oauth2.sdk.id.ClientID;
-import de.adorsys.oauth.server.LoginSessionToken;
 import net.minidev.json.JSONObject;
 
-import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
@@ -28,10 +26,23 @@ import com.nimbusds.oauth2.sdk.token.Token;
 import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
+import de.adorsys.oauth.server.LoginSessionToken;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Lob;
+import javax.persistence.ManyToOne;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+import javax.persistence.OneToMany;
+import javax.persistence.PrePersist;
+import javax.persistence.Table;
+
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Date;
-import javax.persistence.*;
 
 /**
  * TokenEntity
@@ -172,6 +183,6 @@ public class TokenEntity {
     }
 
     public LoginSessionToken getLoginSession() {
-        return new LoginSessionToken(loginSession);
+        return loginSession == null ? null : new LoginSessionToken(loginSession);
     }
 }

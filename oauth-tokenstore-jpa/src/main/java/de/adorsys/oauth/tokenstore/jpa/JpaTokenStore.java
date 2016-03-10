@@ -58,7 +58,8 @@ public class JpaTokenStore implements TokenStore {
 
         TokenEntity refreshTokenEntity = entityManager.find(TokenEntity.class, refreshToken.getValue());
         if (refreshTokenEntity != null) {
-            return new RefreshTokenAndMetadata(refreshTokenEntity.asRefreshToken(), refreshTokenEntity.getUserInfo(), refreshTokenEntity.getClientId(), refreshTokenEntity.getLoginSession());
+            return new RefreshTokenAndMetadata(refreshTokenEntity.asRefreshToken(), refreshTokenEntity.getUserInfo(),
+                    refreshTokenEntity.getClientId(), refreshTokenEntity.getLoginSession());
         }
 
         return null;
