@@ -15,7 +15,8 @@
  */
 package de.adorsys.oauth.sample;
 
-import static com.jayway.restassured.RestAssured.given;
+import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.response.Response;
 
 import org.hamcrest.Matchers;
 import org.jboss.arquillian.container.test.api.Deployment;
@@ -29,14 +30,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.response.Response;
+import static com.jayway.restassured.RestAssured.given;
 
 /**
- * TestPasswordFlow
+ * TestRefreshTokenGrantFlow
  */
 @RunWith(Arquillian.class)
-public class RefreshTokenGrantFlow {
+public class TestRefreshTokenGrantFlow {
 
 
     @Deployment
@@ -53,10 +53,10 @@ public class RefreshTokenGrantFlow {
 
     @Test @RunAsClient
     public void testResourceOwnerPasswordFlow() throws Exception {
-    	RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
 
         Response response = given()
-        		.redirects().follow(false)
+                .redirects().follow(false)
                 .contentType("application/x-www-form-urlencoded")
                 .authentication().basic("sample", "password")
                 .formParam("grant_type", "password")
@@ -77,37 +77,37 @@ public class RefreshTokenGrantFlow {
         System.out.println(response.asString());
         String accessToken = response.jsonPath().getString("access_token");
         String refreshToken = response.jsonPath().getString("refresh_token");
-        
+
         response = given()
-		.redirects().follow(false)
-        .contentType("application/x-www-form-urlencoded")
-        .authentication().basic("sample", "password")
-        .formParam("grant_type", "refresh_token")
-        .formParam("refresh_token", refreshToken)
-        .when()
-        .post(SampleRequest.TOKEN_ENDPOINT)
-        .then()
-        .statusCode(200)
-        .body("access_token", Matchers.not(Matchers.isEmptyOrNullString()))
-        .body("refresh_token", Matchers.not(Matchers.isEmptyOrNullString()))
-        .body("expires_in", Matchers.not(Matchers.isEmptyOrNullString()))
-        .body("token_type", Matchers.is("Bearer"))
-        .header("Pragma", "no-cache")
-        .header("Cache-Control", "no-store")
-        .extract().response();
-        
+                .redirects().follow(false)
+                .contentType("application/x-www-form-urlencoded")
+                .authentication().basic("sample", "password")
+                .formParam("grant_type", "refresh_token")
+                .formParam("refresh_token", refreshToken)
+                .when()
+                .post(SampleRequest.TOKEN_ENDPOINT)
+                .then()
+                .statusCode(200)
+                .body("access_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("refresh_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("expires_in", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("token_type", Matchers.is("Bearer"))
+                .header("Pragma", "no-cache")
+                .header("Cache-Control", "no-store")
+                .extract().response();
+
         String newAccessToken = response.jsonPath().getString("access_token");
         String newRefreshToken = response.jsonPath().getString("refresh_token");
-        
+
         Assert.assertThat(newAccessToken, Matchers.not(accessToken));
         Assert.assertThat(refreshToken, Matchers.not(newRefreshToken));
 
         SampleRequest.verify(newAccessToken);
     }
-    
+
     @BeforeClass
     public static void setLogging(){
-    	RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
-    
+
 }
