@@ -1,8 +1,8 @@
 package de.adorsys.oauth.sample;
 
-import static com.jayway.restassured.RestAssured.given;
-
 import org.hamcrest.Matchers;
+
+import static com.jayway.restassured.RestAssured.given;
 
 /**
  * AuthorizedRequest
@@ -15,6 +15,10 @@ public class SampleRequest {
     static String REVOKE_ENDPOINT = "http://localhost:8280/oauth/api/revoke";
 
     public static void verify(String accessToken) {
+        verify(accessToken, "Hello from jduke [ user admin ]");
+    }
+
+    public static void verify(String accessToken, String expectedBody) {
         given()
         	.log().ifValidationFails()
                     .authentication().oauth2(accessToken)
@@ -22,7 +26,7 @@ public class SampleRequest {
                     .get(SAMPLE_URL)
                     .then()
                     .statusCode(200)
-                    .body(Matchers.containsString("Hello from jduke [ user admin ]"))
+                    .body(Matchers.containsString(expectedBody))
         ;
     }
 
