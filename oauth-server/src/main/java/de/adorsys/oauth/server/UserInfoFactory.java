@@ -62,7 +62,7 @@ public class UserInfoFactory {
         userInfo.setName(name);
 
         if (subjectInfo.getRoles() != null) {
-            for (Role role : subjectInfo.getRoles().getRoles()) {
+            for (Role role : new JBossSubjectInfo(subjectInfo).getRoles()) {
                 roles.add(role.getRoleName());
             }
             userInfo.setClaim("groups", roles);

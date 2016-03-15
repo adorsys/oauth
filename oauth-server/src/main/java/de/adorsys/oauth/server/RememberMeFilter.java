@@ -15,9 +15,14 @@
  */
 package de.adorsys.oauth.server;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import com.nimbusds.oauth2.sdk.AuthorizationRequest;
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.id.ClientID;
+
+import org.jboss.security.SecurityContext;
+import org.jboss.security.SecurityContextAssociation;
+import org.jboss.security.SubjectInfo;
+import org.jboss.security.identity.Role;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -30,14 +35,10 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.jboss.security.SecurityContext;
-import org.jboss.security.SecurityContextAssociation;
-import org.jboss.security.SubjectInfo;
-import org.jboss.security.identity.Role;
-
-import com.nimbusds.oauth2.sdk.AuthorizationRequest;
-import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.id.ClientID;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * @author sso
@@ -86,7 +87,7 @@ public class RememberMeFilter implements Filter {
 
 		SecurityContext context = SecurityContextAssociation.getSecurityContext();
 		SubjectInfo subjectInfo = context.getSubjectInfo();
-		List<Role> roles = subjectInfo.getRoles().getRoles();
+		Collection<Role> roles = new JBossSubjectInfo(subjectInfo).getRoles();
 		List<String> roleStrings = new ArrayList<>();
 		for (Role role : roles) {
 			roleStrings.add(role.getRoleName());
