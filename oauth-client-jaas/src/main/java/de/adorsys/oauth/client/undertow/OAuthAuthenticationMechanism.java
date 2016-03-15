@@ -51,7 +51,7 @@ public class OAuthAuthenticationMechanism implements AuthenticationMechanism {
         userInfoResolver = UserInfoResolver.from(properties);
 
         supportAuthCode = extract(properties, "supportAuthCode", true);
-        supportGuest = extract(properties, "supportAuthCode", false);
+        supportGuest = extract(properties, "supportGuest", false);
 
         LOG.info("use {} {}", oauthProtocol, userInfoResolver);
     }
@@ -81,6 +81,7 @@ public class OAuthAuthenticationMechanism implements AuthenticationMechanism {
         // 1.1 kein accessToken and guest allowed
         if (accessToken == null && supportGuest) {
             Account account = securityContext.getIdentityManager().verify("guest", new PasswordCredential("NONE".toCharArray()));
+            securityContext.authenticationComplete(account, mechanismName, false);
             return AuthenticationMechanismOutcome.AUTHENTICATED;
         }
 
