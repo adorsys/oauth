@@ -4,23 +4,8 @@ import com.nimbusds.oauth2.sdk.AccessTokenResponse;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.Tokens;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
-
 import de.adorsys.oauth.client.protocol.OAuthProtocol;
 import de.adorsys.oauth.client.protocol.UserInfoResolver;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import java.net.URI;
-import java.security.Principal;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
-
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.AuthenticationMechanismFactory;
 import io.undertow.security.api.SecurityContext;
@@ -30,6 +15,17 @@ import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.form.FormParserFactory;
 import io.undertow.servlet.handlers.ServletRequestContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.net.URI;
+import java.security.Principal;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * OAuthAuthenticationMechanism
@@ -43,6 +39,7 @@ public class OAuthAuthenticationMechanism implements AuthenticationMechanism {
     private UserInfoResolver userInfoResolver;
     private boolean supportAuthCode;
     private boolean supportGuest;
+    private boolean supportHttpSession;
     private String mechanismName;
 
     public OAuthAuthenticationMechanism(String mechanismName, Map<String, String> properties) {
@@ -52,6 +49,7 @@ public class OAuthAuthenticationMechanism implements AuthenticationMechanism {
 
         supportAuthCode = extract(properties, "supportAuthCode", true);
         supportGuest = extract(properties, "supportGuest", false);
+        supportHttpSession = extract(properties, "supportHttpSession", false);
 
         LOG.info("use {} {}", oauthProtocol, userInfoResolver);
     }
@@ -142,7 +140,7 @@ public class OAuthAuthenticationMechanism implements AuthenticationMechanism {
             return false;
         }
 
-        securityContext.authenticationComplete(account, mechanismName, true); // cachingRequired ???
+        securityContext.authenticationComplete(account, mechanismName, supportHttpSession);
 
         response.setHeader("Authorization", accessToken.toAuthorizationHeader());
 
