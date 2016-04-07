@@ -59,6 +59,10 @@
 			<groupId>io.undertow</groupId>
 			<artifactId>undertow-servlet</artifactId>
 		</dependency>
+		<dependency>
+          <artifactId>nimbus-jose-jwt</artifactId>
+          <groupId>com.nimbusds</groupId>
+  		</dependency>
 	</dependencies>
 
 	<build>

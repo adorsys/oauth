@@ -132,6 +132,11 @@
         </exclusions>
       </dependency>
       <dependency>
+      	  <artifactId>nimbus-jose-jwt</artifactId>
+      	  <groupId>com.nimbusds</groupId>
+      	  <version>4.13.1</version>
+	  </dependency>
+      <dependency>
         <groupId>org.jboss.metadata</groupId>
         <artifactId>jboss-metadata-common</artifactId>
         <version>${version.jboss.metadata}</version>
