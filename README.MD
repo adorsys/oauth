@@ -50,7 +50,7 @@ JPA implementation of the oauth-server token store interface.
 
 
 
-oauth-tokenstore-mdb
+oauth-tokenstore-mongodb
 ====================
 Mongo DB implementation of the oauth-server token store interface.
 
