@@ -6,7 +6,7 @@ Currently only JBoss EAP 6 is supported, but an adaptation to other servers shou
 
 For [OAuth2](https://tools.ietf.org/html/rfc6749) and [OpenID Connect](http://openid.net/specs/openid-connect-core-1_0.html) protocol itself an [SDK from Nimbus](http://connect2id.com/products/nimbus-oauth-openid-connect-sd) is used. 
 
-For container integration valves and JAAS login modules are currently used, to be more containter independent a [JASPIC](https://jaspic-spec.java.net) implementation is provided.
+For container integration valves and JAAS login modules are currently used, to be more container independent a [JASPIC](https://jaspic-spec.java.net) implementation is provided.
 
 
 The server and test project using JBoss Arquillian for testing, so that the following artifact in Maven repository is expected:
@@ -85,7 +85,7 @@ The oauth-server itselfs requires an concrete token store implementation:
         </dependency>
     </dependencies>
 
-To achieve authentication the OAuth endpoints must be protected (web.xml) :
+To achieve authentication the OAuth endpoints must be protected (web.xml):
 
     <security-constraint>
         <web-resource-collection>
@@ -109,7 +109,7 @@ With this configuration, authentication is delegated to the application server w
 The oauth-server components themselves using a small part of JBoss specific code to extract the roles for the userinfo endpoint extract.
 
 
-Attention: JBoss requires an active role for protecting of resources. That is, **all** users must have this role (in this sample 'oauth'). To giva all users this technical role, a simple login module is provided :
+Attention: JBoss requires an active role for protecting of resources. That is, **all** users must have this role (in this sample 'oauth'). To giva all users this technical role, a simple login module is provided:
 
     <login-module code="de.adorsys.oauth.server.OAuthRoleLoginModule" flag="optional" />
    
@@ -169,7 +169,7 @@ Wiht this definiton, the following security domain in the JBoss server definitio
 
 oauth-client-jaspic
 ===================
-This OAuth-client uses an ServletContextListener for self registration of the JAPSIC server auth module.
+This OAuth-client uses an ServletContextListener for self registration of the JASPIC server auth module.
 
 The configuration is taken from the following ServletContext parameters:
 
