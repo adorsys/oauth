@@ -84,7 +84,7 @@ The oauth-server itselfs requires an concrete token store implementation:
         </dependency>
         <dependency>
             <groupId>de.adorsys.oauth</groupId>
-            <artifactId>oauth-tokenstore-mdb</artifactId>
+            <artifactId>oauth-tokenstore-jpa</artifactId>
             <version>${version.oauth}</version>
         </dependency>
     </dependencies>
