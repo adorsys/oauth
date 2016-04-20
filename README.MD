@@ -72,16 +72,20 @@ The oauth-server itselfs requires an concrete token store implementation:
     <artifactId>oauth-server-sample</artifactId>
     <packaging>war</packaging>
 
+    <properties>
+        <version.oauth>0.16</version.oauth>
+    </properties>
+
     <dependencies>
         <dependency>
-        <groupId>${project.groupId}</groupId>
-        <artifactId>oauth-server</artifactId>
-        <version>${project.version}</version>
+            <groupId>de.adorsys.oauth</groupId>
+            <artifactId>oauth-server</artifactId>
+            <version>${version.oauth}</version>
         </dependency>
-    <dependency>
-        <groupId>${project.groupId}</groupId>
-        <artifactId>oauth-tokenstore-jpa</artifactId>
-        <version>${project.version}</version>
+        <dependency>
+            <groupId>de.adorsys.oauth</groupId>
+            <artifactId>oauth-tokenstore-mdb</artifactId>
+            <version>${version.oauth}</version>
         </dependency>
     </dependencies>
 
