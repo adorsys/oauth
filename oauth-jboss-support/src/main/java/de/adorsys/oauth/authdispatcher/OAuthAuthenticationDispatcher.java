@@ -63,7 +63,6 @@ public class OAuthAuthenticationDispatcher extends ValveBase implements PolicyCo
 	private List<AuthenticatorMatcher> matchers;
 
 	private static final String[] SUPPORTED_CONTEXT = {
-			HttpServletRequest.class.getName(),
 			HttpServletResponse.class.getName(),
 			AuthorizationRequest.class.getName(),
 			TokenRequest.class.getName()
@@ -146,9 +145,7 @@ public class OAuthAuthenticationDispatcher extends ValveBase implements PolicyCo
 		AuthorizationRequest authorizationRequest = resolveAuthorizationRequest(httpRequest);
 		TokenRequest tokenRequest = resolveTokenRequest(httpRequest);
 
-
-		store(HttpServletRequest.class.getName(), request)
-				.store(HttpServletResponse.class.getName(), response)
+		store(HttpServletResponse.class.getName(), response)
 				.store(AuthorizationRequest.class.getName(), authorizationRequest)
 				.store(TokenRequest.class.getName(), tokenRequest);
 
