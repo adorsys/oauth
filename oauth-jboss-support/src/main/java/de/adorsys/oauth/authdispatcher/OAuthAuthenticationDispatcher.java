@@ -80,7 +80,7 @@ public class OAuthAuthenticationDispatcher extends ValveBase implements PolicyCo
 
 		for (String key : SUPPORTED_CONTEXT) {
 			try {
-				PolicyContext.registerHandler(key, this, false);
+				PolicyContext.registerHandler(key, this, true);
 			} catch (Exception e) {
 				LOG.debug(e.getClass().getSimpleName() + " " + e.getMessage());
 			}
