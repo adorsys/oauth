@@ -163,8 +163,6 @@ public class HTTPAuthenticationLoginModule implements LoginModule {
 			sharedState.put("javax.security.auth.login.password", password);
 		} catch (IOException e) {
 			throw new IllegalStateException("problem on http backend authentication", e);
-		} catch (Throwable e) {
-			e.printStackTrace();
 		} finally {
 			if (userInfoResponse != null) {
 				try {
