@@ -25,6 +25,7 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -40,7 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import com.nimbusds.jose.util.Base64;
 
-@WebFilter(urlPatterns = {"/api/token", "/api/revoke"})
+@WebFilter(urlPatterns = {"/api/token", "/api/revoke"}, dispatcherTypes = { DispatcherType.REQUEST, DispatcherType.FORWARD})
 public class ClientCredentialsCheckFilter implements Filter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ClientCredentialsCheckFilter.class);
