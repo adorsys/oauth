@@ -207,8 +207,9 @@ public class HTTPAuthenticationLoginModule implements LoginModule {
 	public boolean commit() throws LoginException {
 		if (preparedPrincipals != null) {
 			subject.getPrincipals().addAll(preparedPrincipals);
+			return true;
 		}
-		return true;
+		return false;
 	}
 
 	@Override
