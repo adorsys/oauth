@@ -41,8 +41,12 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * @author sso
+ * Web Filter that handles the remember me cookie.
  *
+ * If the URL parameter {@code rememberme} is defined as false, the cookie value will not be used to retrieve the login session
+ * and the cookie will be removed.
+ *
+ * @author sso
  */
 @WebFilter(filterName = "rememberme")
 public class RememberMeFilter implements Filter {
@@ -62,7 +66,7 @@ public class RememberMeFilter implements Filter {
 		} catch (ParseException e) {
 			throw new OAuthException("problem extraction clientId", e);
 		}
-		if (RememberMeTokenUtil.isEnabled()) {
+		if (RememberMeTokenUtil.isEnabled() && shouldRememberMe(request)) {
 			request.setAttribute("loginSession", getOrCreateLoginSession(request, response, authorizationRequest));
 		}
 		chain.doFilter(sr, sresp);
@@ -70,6 +74,11 @@ public class RememberMeFilter implements Filter {
 		if (request.getAttribute("loginSession") == null) {
 			RememberMeCookieUtil.removeCookieToken(request, response, authorizationRequest.getClientID());
 		}
+	}
+
+	private boolean shouldRememberMe(HttpServletRequest request) {
+		// Poor man's way to default to true
+		return !"false".equals(request.getParameter("rememberme"));
 	}
 
 	private LoginSessionToken getOrCreateLoginSession(HttpServletRequest request, HttpServletResponse response,
