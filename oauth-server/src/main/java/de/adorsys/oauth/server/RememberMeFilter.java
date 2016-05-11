@@ -56,29 +56,29 @@ public class RememberMeFilter implements Filter {
 			throws IOException, ServletException {
 		HttpServletRequest request = (HttpServletRequest) sr;
 		HttpServletResponse response = (HttpServletResponse) sresp;
+		AuthorizationRequest authorizationRequest;
 		try {
-			AuthorizationRequest authorizationRequest = AuthorizationRequest.parse(request.getQueryString());
-			if (RememberMeTokenUtil.isEnabled()) {
-				Cookie cookieToken = RememberMeCookieUtil.getCookieToken(request, authorizationRequest.getClientID());
-			
-				LoginSessionToken loginSession;
-				if (cookieToken == null) {
-					loginSession = new LoginSessionToken();
-					rememberAuthInCookie(request, response, authorizationRequest.getClientID(), loginSession);
-				} else {
-					loginSession = RememberMeTokenUtil.getLoginSession(cookieToken.getValue());
-				}
-				request.setAttribute("loginSession", loginSession);
-			}
-			chain.doFilter(sr, sresp);
-			
-			if (request.getAttribute("loginSession") == null) {
-				RememberMeCookieUtil.removeCookieToken(request, response, authorizationRequest.getClientID());
-			}
+			authorizationRequest = AuthorizationRequest.parse(request.getQueryString());
 		} catch (ParseException e) {
 			throw new OAuthException("problem extraction clientId", e);
 		}
+		if (RememberMeTokenUtil.isEnabled()) {
+			Cookie cookieToken = RememberMeCookieUtil.getCookieToken(request, authorizationRequest.getClientID());
 
+			LoginSessionToken loginSession;
+			if (cookieToken == null) {
+				loginSession = new LoginSessionToken();
+				rememberAuthInCookie(request, response, authorizationRequest.getClientID(), loginSession);
+			} else {
+				loginSession = RememberMeTokenUtil.getLoginSession(cookieToken.getValue());
+			}
+			request.setAttribute("loginSession", loginSession);
+		}
+		chain.doFilter(sr, sresp);
+
+		if (request.getAttribute("loginSession") == null) {
+			RememberMeCookieUtil.removeCookieToken(request, response, authorizationRequest.getClientID());
+		}
 	}
 
 	private void rememberAuthInCookie(HttpServletRequest request, HttpServletResponse response, ClientID clientID, LoginSessionToken loginSessionToken) {
