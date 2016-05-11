@@ -118,8 +118,17 @@ public class AuthResource {
                     .build();
         }
 
-        UserInfo userInfo;
         LoginSessionToken loginSession = (LoginSessionToken) servletRequest.getAttribute("loginSession");
+		// rememberme cookie exists and login session invalid => destroy
+		if (loginSession != null //
+				&& RememberMeCookieUtil.getCookieToken(servletRequest, request.getClientID()) != null //
+				&& !tokenStore.isValid(loginSession)) {
+			servletRequest.removeAttribute("loginSession");
+			tokenStore.removeLoginSession(loginSession);
+			return response.location(request.toURI()).build();
+		}
+
+		UserInfo userInfo;
         if (loginSession != null) {
         	userInfo = tokenStore.loadUserInfoFromLoginSession(loginSession);
         	if (userInfo == null) {
@@ -133,20 +142,9 @@ public class AuthResource {
         LOG.debug(userInfo.toJSONObject().toJSONString());
         
         BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
-
-        URI location;
-
-        if (request.getResponseType().impliesCodeFlow()) {
-
-            if (loginSession != null) {
-                // rememberme cookie exists and login session invalid => destroy
-                if (RememberMeCookieUtil.getCookieToken(servletRequest,request.getClientID()) != null && ! tokenStore.isValid(loginSession) ) {
-        			servletRequest.removeAttribute("loginSession");
-                    tokenStore.removeLoginSession(loginSession);
-                    return response.location(request.toURI()).build();
-        		}
-        	}
-
+		
+		URI location;
+		if (request.getResponseType().impliesCodeFlow()) {
         	AuthorizationCode authCode = new AuthorizationCode();
             LOG.info("impliesCodeFlow {}", authCode.toJSONString());
 			tokenStore.addAuthCode(authCode, userInfo, request.getClientID(), loginSession, request.getRedirectionURI());
