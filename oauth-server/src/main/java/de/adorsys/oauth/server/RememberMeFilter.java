@@ -63,22 +63,27 @@ public class RememberMeFilter implements Filter {
 			throw new OAuthException("problem extraction clientId", e);
 		}
 		if (RememberMeTokenUtil.isEnabled()) {
-			Cookie cookieToken = RememberMeCookieUtil.getCookieToken(request, authorizationRequest.getClientID());
-
-			LoginSessionToken loginSession;
-			if (cookieToken == null) {
-				loginSession = new LoginSessionToken();
-				rememberAuthInCookie(request, response, authorizationRequest.getClientID(), loginSession);
-			} else {
-				loginSession = RememberMeTokenUtil.getLoginSession(cookieToken.getValue());
-			}
-			request.setAttribute("loginSession", loginSession);
+			request.setAttribute("loginSession", getOrCreateLoginSession(request, response, authorizationRequest));
 		}
 		chain.doFilter(sr, sresp);
 
 		if (request.getAttribute("loginSession") == null) {
 			RememberMeCookieUtil.removeCookieToken(request, response, authorizationRequest.getClientID());
 		}
+	}
+
+	private LoginSessionToken getOrCreateLoginSession(HttpServletRequest request, HttpServletResponse response,
+			AuthorizationRequest authorizationRequest) {
+		Cookie cookieToken = RememberMeCookieUtil.getCookieToken(request, authorizationRequest.getClientID());
+
+		LoginSessionToken loginSession;
+		if (cookieToken == null) {
+			loginSession = new LoginSessionToken();
+			rememberAuthInCookie(request, response, authorizationRequest.getClientID(), loginSession);
+		} else {
+			loginSession = RememberMeTokenUtil.getLoginSession(cookieToken.getValue());
+		}
+		return loginSession;
 	}
 
 	private void rememberAuthInCookie(HttpServletRequest request, HttpServletResponse response, ClientID clientID, LoginSessionToken loginSessionToken) {
