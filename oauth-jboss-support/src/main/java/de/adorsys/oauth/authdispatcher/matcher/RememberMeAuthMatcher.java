@@ -53,6 +53,9 @@ public class RememberMeAuthMatcher extends BaseAuthenticatorMatcher {
 		if (!"/auth".equals(request.getPathInfo()) || authorizationRequest == null || authorizationRequest.getClientID() == null) {
 			return null;
 		}
+		if(!shouldRememberMe(request)) {
+			return null;
+		}
 		Cookie cookieToken = getCookieToken(authorizationRequest.getClientID().getValue(), request);
 		return cookieToken != null ? valve : null;
 	}
@@ -70,4 +73,8 @@ public class RememberMeAuthMatcher extends BaseAuthenticatorMatcher {
 		return null;
 	}
 
+	private boolean shouldRememberMe(HttpServletRequest request) {
+		// Poor man's way to default to true
+		return !"false".equals(request.getParameter("rememberme"));
+	}
 }
