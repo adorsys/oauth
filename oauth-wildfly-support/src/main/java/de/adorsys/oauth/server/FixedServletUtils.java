@@ -101,9 +101,6 @@ public class FixedServletUtils {
 	 *                                  not GET, POST, PUT or DELETE or the
 	 *                                  content type header value couldn't
 	 *                                  be parsed.
-	 * @throws IOException              For a POST or PUT body that
-	 *                                  couldn't be read due to an I/O
-	 *                                  exception.
 	 */
 	public static HTTPRequest createHTTPRequest(final HttpServletRequest servletRequest) {
 

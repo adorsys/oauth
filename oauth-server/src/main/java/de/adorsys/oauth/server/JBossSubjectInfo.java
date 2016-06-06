@@ -10,8 +10,8 @@ import java.util.Collection;
 /**
  * JBossSubjectInfo
  * picketlink changes the interface (sic) of RoleGroup
- * before 4.9 : List<Role> getRoles
- * after 4.9 : Collection<Role> getRoles ...
+ * before 4.9 : List&gt;Role&lt; getRoles
+ * after 4.9 : Collection&gt;Role&lt; getRoles ...
  * The compiled classes contains the type of the return value
  *
  * we have to support a wide range of picketboxes ( 4.9 is in eap 7)
