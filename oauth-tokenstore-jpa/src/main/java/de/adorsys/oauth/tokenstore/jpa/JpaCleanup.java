@@ -40,29 +40,33 @@ public class JpaCleanup {
 
     @Schedule(hour="1", persistent=false)
     public void doCleanup(){
-        // 20 days
-        LocalDate nowMinus20 = LocalDate.now().minusDays(20);
-        Instant instant = nowMinus20.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant();
-        Date date = Date.from(instant);
+        Object property = System.getProperty("oauth.doCleanup");
 
-        LOG.info("Cleaning up tokens older than: " + date);
+        if (property != null && ((String)property).equals("true")) {
+            // 20 days
+            LocalDate nowMinus20 = LocalDate.now().minusDays(20);
+            Instant instant = nowMinus20.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant();
+            Date date = Date.from(instant);
 
-        int countAuthCode = entityManager.createQuery("delete from AuthCodeEntity ace where ace.created < :date")
-                .setParameter("date", date)
-                .executeUpdate();
+            LOG.info("Cleaning up tokens older than: " + date);
 
-        LOG.info("Deleted " + countAuthCode + " AuthCodeEntities");
+            int countAuthCode = entityManager.createQuery("delete from AuthCodeEntity ace where ace.created < :date")
+                    .setParameter("date", date)
+                    .executeUpdate();
 
-        int countToken = entityManager.createQuery("delete from TokenEntity te where te.created < :date")
-                .setParameter("date", date)
-                .executeUpdate();
+            LOG.info("Deleted " + countAuthCode + " AuthCodeEntities");
 
-        LOG.info("Deleted " + countToken + " TokenEntity");
+            int countToken = entityManager.createQuery("delete from TokenEntity te where te.created < :date")
+                    .setParameter("date", date)
+                    .executeUpdate();
 
-        int countLoginSession = entityManager.createQuery("delete from LoginSessionEntity lse where lse.created < :date")
-                .setParameter("date", date)
-                .executeUpdate();
+            LOG.info("Deleted " + countToken + " TokenEntity");
 
-        LOG.info("Deleted " + countLoginSession + " LoginSessionEntity");
+            int countLoginSession = entityManager.createQuery("delete from LoginSessionEntity lse where lse.created < :date")
+                    .setParameter("date", date)
+                    .executeUpdate();
+
+            LOG.info("Deleted " + countLoginSession + " LoginSessionEntity");
+        }
     }
 }

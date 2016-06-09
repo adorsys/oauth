@@ -175,7 +175,11 @@ public class JpaTokenStore implements TokenStore {
         query.setParameter("loginSession", loginSessionToken.getValue());
 
         for (TokenEntity tokenEntity : query.getResultList()) {
-            entityManager.remove(tokenEntity);
+            try {
+                entityManager.remove(tokenEntity);
+            } catch (Exception e) {
+                LOG.info("Exception deleting token " + e.getMessage());
+            }
         }
     }
 
