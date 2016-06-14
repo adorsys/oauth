@@ -15,6 +15,20 @@
  */
 package de.adorsys.oauth.server;
 
+import java.io.IOException;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
@@ -24,54 +38,35 @@ import com.nimbusds.openid.connect.sdk.UserInfoRequest;
 import com.nimbusds.openid.connect.sdk.UserInfoSuccessResponse;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
-
 /**
  * UserInfoResource
  */
-@Path("userinfo")
+@WebServlet(value="/api/userinfo")
 @ApplicationScoped
-public class UserInfoResource {
+public class UserInfoResource extends HttpServlet {
 
     private static final Logger LOG = LoggerFactory.getLogger(UserInfoResource.class);
 
-    @Context
-    private HttpServletRequest servletRequest;
-
-    @Context
-    private HttpServletResponse servletResponse;
-
-    @Context
-    private ServletContext servletContext;
-
-    @SuppressWarnings("unused")
     @Inject
     private TokenStore tokenStore;
 
     private Long cachemaxage;
-
-    @PostConstruct
-    public void postConstruct() {
-        try {
-            cachemaxage = Long.valueOf(servletContext.getInitParameter("cachemaxage"));
-            LOG.info("cachemaxage {}", cachemaxage);
-        } catch (Exception e) {
-        }
+    
+    @Override
+    public void init(ServletConfig config) throws ServletException {
+	   try {
+           cachemaxage = Long.valueOf(config.getServletContext().getInitParameter("cachemaxage"));
+           LOG.info("cachemaxage {}", cachemaxage);
+       } catch (Exception e) {
+       }
     }
 
-    @GET
-    public void userInfo() throws Exception {
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    	userInfo(req, resp);
+    }
+    
+    public void userInfo(HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException {
 
         UserInfoRequest userInfoRequest;
 
