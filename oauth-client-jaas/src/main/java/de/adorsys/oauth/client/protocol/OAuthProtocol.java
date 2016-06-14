@@ -176,7 +176,7 @@ public class OAuthProtocol {
 
         String redirect = String.format("%s?%s", authorizationRequest.toHTTPRequest().getURL(), authorizationRequest.toHTTPRequest().getQuery());
 
-        LOG.info("redirect to {}", redirect);
+        LOG.debug("redirect to {}", redirect);
 
         try {
             response.sendRedirect(redirect);
