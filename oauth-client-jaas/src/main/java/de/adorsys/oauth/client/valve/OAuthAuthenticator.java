@@ -89,14 +89,14 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 			request.setUserPrincipal(principal);
 			return true;
 		}
-
+		
 		// try to authenticate with accessToken
         if (authenticate(accessToken, request, response, null, null)) {
 			return true;
 		}
 
 		// return 401 if AuthorizationCodeFlow disallowed
-		if (!supportAuthCode) {
+		if (!isAuthCodeRequest(request)) {
 			response.setStatus(401);
 			return false;
 		}
@@ -119,7 +119,15 @@ public class OAuthAuthenticator extends AuthenticatorBase {
 		return false;
 	}
 
-
+	/**
+	 * If true, the module will redirect to configured "authEndpoint"
+	 * otherwise return 401. This method is usefull to override in case of mixed auth flow webapps. 
+	 * @param request
+	 * @return true for redirect false for 401
+	 */
+	protected boolean isAuthCodeRequest(Request request) {
+		return supportAuthCode;
+	}
 
 	/**
 	 * authenticate with accessToken
