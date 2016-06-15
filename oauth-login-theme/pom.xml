@@ -23,7 +23,7 @@
 	<parent>
 		<groupId>de.adorsys.oauth</groupId>
 		<artifactId>oauth-parent</artifactId>
-		<version>0.20-SNAPSHOT</version>
+		<version>0.21-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>oauth-login-theme</artifactId>

@@ -4,6 +4,8 @@ import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
+import de.adorsys.oauth.client.OAuthCredentialHasher;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.client.cache.HttpCacheContext;
 import org.apache.http.client.config.RequestConfig;
@@ -12,6 +14,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.cache.CacheConfig;
 import org.apache.http.impl.client.cache.CachingHttpClients;
+import org.apache.http.impl.client.cache.memcached.SHA256KeyHashingScheme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,10 +83,10 @@ public class UserInfoResolver {
             CloseableHttpResponse userInfoResponse = cachingHttpClient.execute(httpGet, context);
             
             //TODO mask accessToken
-            LOG.debug("read userinfo {} {}", accessToken.getValue(), context.getCacheResponseStatus());
+            LOG.debug("read userinfo {} {}", OAuthCredentialHasher.hashCredential(accessToken.getValue()), context.getCacheResponseStatus());
             HttpEntity entity = userInfoResponse.getEntity();
             if (userInfoResponse.getStatusLine().getStatusCode() != 200 || entity == null) {
-            	LOG.debug("no userInfo available for {}", accessToken.getValue());
+            	LOG.debug("no userInfo available for {}", OAuthCredentialHasher.hashCredential(accessToken.getValue()));
             	return null;
             }
 

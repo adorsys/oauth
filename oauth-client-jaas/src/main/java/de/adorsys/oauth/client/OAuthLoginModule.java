@@ -84,7 +84,7 @@ public class OAuthLoginModule implements LoginModule {
                 return false;
             }
 
-            LOG.info("login {}:{}", name, bearer);
+            LOG.debug("login {}:{}", name, OAuthCredentialHasher.hashCredential(bearer));
 
             SimplePrincipal principal = new SimplePrincipal(name);
             subject.getPrincipals().add(principal);
