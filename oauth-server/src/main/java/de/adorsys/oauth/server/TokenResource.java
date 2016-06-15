@@ -36,7 +36,11 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
@@ -51,21 +55,12 @@ import java.util.Map;
 /**
  * TokenResource
  */
-@Path("token")
+@WebServlet("/api/token")
 @ApplicationScoped
 @SuppressWarnings("unused")
-public class TokenResource {
+public class TokenResource extends HttpServlet {
 
     private static final Logger LOG = LoggerFactory.getLogger(TokenResource.class);
-
-    @Context
-    private HttpServletRequest servletRequest;
-
-    @Context
-    private HttpServletResponse servletResponse;
-
-    @Context
-    private ServletContext servletContext;
 
     @Inject
     private UserInfoFactory userInfoFactory;
@@ -74,21 +69,24 @@ public class TokenResource {
     private TokenStore tokenStore;
 
     private long tokenLifetime;
+    
+    @Override
+    public void init(ServletConfig config) throws ServletException {
+	   try {
+           tokenLifetime = Long.valueOf(config.getServletContext().getInitParameter("lifetime"));
+       } catch (Exception e) {
+           tokenLifetime = 8 * 3600;
+       }
 
-    @PostConstruct
-    public void postConstruct() {
-        try {
-            tokenLifetime = Long.valueOf(servletContext.getInitParameter("lifetime"));
-        } catch (Exception e) {
-            tokenLifetime = 8 * 3600;
-        }
-
-        LOG.info("token lifetime {}", tokenLifetime);
+       LOG.info("token lifetime {}", tokenLifetime);
+    }
+    
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    	token(req, resp);
     }
 
-    @POST
-    @Consumes("application/x-www-form-urlencoded")
-    public void token() throws Exception {
+    public void token(HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException {
         TokenRequest request;
 		try {
 			request = TokenRequest.parse(FixedServletUtils.createHTTPRequest(servletRequest));
@@ -97,22 +95,22 @@ public class TokenResource {
                     new TokenErrorResponse(OAuth2Error.UNSUPPORTED_GRANT_TYPE).toHTTPResponse(), servletResponse);
 			return;
 		}
-        LOG.info("tokenRequest {}", request);
+        LOG.debug("tokenRequest {}", request);
 
         AuthorizationGrant authorizationGrant = request.getAuthorizationGrant();
 
         if (authorizationGrant.getType() == GrantType.AUTHORIZATION_CODE) {
-            doAuthorizationCodeGrantFlow(request);
+            doAuthorizationCodeGrantFlow(request, servletRequest, servletResponse);
             return;
         }
 
         if (authorizationGrant.getType() == GrantType.PASSWORD) {
-            doResourceOwnerPasswordCredentialFlow(request);
+            doResourceOwnerPasswordCredentialFlow(request, servletRequest, servletResponse);
             return;
         }
         
         if (authorizationGrant.getType() == GrantType.REFRESH_TOKEN) {
-            doRefreshTokenGrantFlow(request);
+            doRefreshTokenGrantFlow(request, servletRequest, servletResponse);
             return;
         }
 
@@ -120,7 +118,7 @@ public class TokenResource {
                     new TokenErrorResponse(OAuth2Error.UNSUPPORTED_GRANT_TYPE).toHTTPResponse(), servletResponse);
     }
 
-    private void doRefreshTokenGrantFlow(TokenRequest request) throws IOException {
+    private void doRefreshTokenGrantFlow(TokenRequest request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException {
 
         RefreshTokenGrant refreshTokenGrant = (RefreshTokenGrant) request.getAuthorizationGrant();
     	
@@ -144,7 +142,7 @@ public class TokenResource {
                 servletResponse);
 	}
 
-	private void doAuthorizationCodeGrantFlow(TokenRequest request) throws Exception  {
+	private void doAuthorizationCodeGrantFlow(TokenRequest request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException  {
         AuthorizationCodeGrant authorizationCodeGrant = (AuthorizationCodeGrant) request.getAuthorizationGrant();
 
         AuthCodeAndMetadata authCodeMetadata = tokenStore.consumeAuthCode(authorizationCodeGrant.getAuthorizationCode());
@@ -174,7 +172,7 @@ public class TokenResource {
 
         tokenStore.addAccessToken(accessToken, authCodeMetadata.getUserInfo(), authCodeMetadata.getClientId(), refreshToken);
 
-        LOG.info("accessToken {}", accessToken.toJSONString());
+        LOG.debug("accessToken {}", accessToken.toJSONString());
 
         Map<String, Object> customParameters = new HashMap<>();
         if (authCodeMetadata.getLoginSession() != null) {
@@ -186,21 +184,21 @@ public class TokenResource {
                 servletResponse);
     }
 
-    private void doResourceOwnerPasswordCredentialFlow(TokenRequest request) throws Exception {
+    private void doResourceOwnerPasswordCredentialFlow(TokenRequest request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException {
         UserInfo userInfo = userInfoFactory.createUserInfo(servletRequest);
         LOG.debug(userInfo.toJSONObject().toJSONString());
 
         RefreshToken refreshToken = new RefreshToken();
-        LOG.info("request.getClientAuthentication() {}", request.getClientAuthentication());
+        LOG.debug("request.getClientAuthentication() {}", request.getClientAuthentication());
 		tokenStore.addRefreshToken(refreshToken, userInfo, request.getClientAuthentication().getClientID(), null);
 
         BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
 
-        LOG.info("resourceOwnerPasswordCredentialFlow {}", accessToken.toJSONString());
+        LOG.debug("resourceOwnerPasswordCredentialFlow {}", accessToken.toJSONString());
 
         tokenStore.addAccessToken(accessToken, userInfo, request.getClientAuthentication().getClientID(), refreshToken);
 
-        LOG.info("accessToken {}", accessToken.toJSONString());
+        LOG.debug("accessToken {}", accessToken.toJSONString());
 
         ServletUtils.applyHTTPResponse(
                 new AccessTokenResponse(new Tokens(accessToken, refreshToken)).toHTTPResponse(),

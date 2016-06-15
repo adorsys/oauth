@@ -41,7 +41,7 @@ import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 /**
  * UserInfoResource
  */
-@WebServlet(value="/api/userinfo")
+@WebServlet("/api/userinfo")
 @ApplicationScoped
 public class UserInfoResource extends HttpServlet {
 
@@ -100,7 +100,8 @@ public class UserInfoResource extends HttpServlet {
             return;
         }
 
-        LOG.info("userInfo {}", accessToken.toJSONString());
+        //TODO mask accesstoken
+        LOG.debug("userInfo {}", accessToken.toJSONString());
 
         long lifeTime = tokenStore.load(accessToken.getValue()).getLifetime();
         long cacheLiveTime = cachemaxage != null ? cachemaxage : lifeTime;

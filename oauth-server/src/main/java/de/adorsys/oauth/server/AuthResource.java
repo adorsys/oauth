@@ -21,6 +21,7 @@ import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse;
 import com.nimbusds.oauth2.sdk.OAuth2Error;
 import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.TokenErrorResponse;
 import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
@@ -39,13 +40,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.ResponseBuilder;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -91,9 +85,19 @@ public class AuthResource extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest servletRequest, HttpServletResponse resp) throws ServletException, IOException {
 
-        AuthorizationRequest request = resolveAuthorizationRequest();
+        authorize(servletRequest, resp);
+    }
 
-        ResponseBuilder response = Response.status(302);
+	private void authorize(HttpServletRequest servletRequest, HttpServletResponse resp) throws IOException {
+		AuthorizationRequest request;
+		try {
+			request = resolveAuthorizationRequest(servletRequest);
+		} catch (ParseException e) {
+			ServletUtils.applyHTTPResponse(
+                    new TokenErrorResponse(OAuth2Error.INVALID_REQUEST).toHTTPResponse(), resp);
+			return;
+		}
+
         
         if (request.getRedirectionURI() == null) {
         	ServletUtils.applyHTTPResponse(new AuthorizationErrorResponse(request.getEndpointURI(), OAuth2Error.INVALID_REQUEST, request.getState(), request.getResponseMode()).toHTTPResponse(), resp);
@@ -123,8 +127,10 @@ public class AuthResource extends HttpServlet {
 				&& !tokenStore.isValid(loginSession)) {
 			servletRequest.removeAttribute("loginSession");
 			tokenStore.removeLoginSession(loginSession);
-			ServletUtils.applyHTTPResponse(HTTPResponse., servletResponse);
-			return  response.location(request.toURI()).build();
+			HTTPResponse httpResponse = new HTTPResponse(303);
+			httpResponse.setLocation(request.toURI());
+			ServletUtils.applyHTTPResponse(httpResponse, resp);
+			return;
 		}
 
 		UserInfo userInfo;
@@ -142,36 +148,37 @@ public class AuthResource extends HttpServlet {
         
         BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
 		
-		URI location;
+		HTTPResponse response;
 		if (request.getResponseType().impliesCodeFlow()) {
         	AuthorizationCode authCode = new AuthorizationCode();
-            LOG.info("impliesCodeFlow {}", authCode.toJSONString());
+            LOG.debug("impliesCodeFlow {}", authCode.toJSONString());
 			tokenStore.addAuthCode(authCode, userInfo, request.getClientID(), loginSession, request.getRedirectionURI());
 
-            location = new AuthorizationSuccessResponse(request.getRedirectionURI(), authCode, null, request.getState(), request.getResponseMode()).toURI();
+			response = new AuthorizationSuccessResponse(request.getRedirectionURI(), authCode, null, request.getState(), request.getResponseMode()).toHTTPResponse();
 
         } else {
 
-            LOG.info("impliesTokenFlow {}", accessToken.toJSONString());
+            LOG.debug("impliesTokenFlow {}", accessToken.toJSONString());
             tokenStore.addAccessToken(accessToken, userInfo, request.getClientID(), null);
 
-            location = new AuthorizationSuccessResponse(request.getRedirectionURI(), null, accessToken, request.getState(), request.getResponseMode()).toURI();
+            response = new AuthorizationSuccessResponse(request.getRedirectionURI(), null, accessToken, request.getState(), request.getResponseMode()).toHTTPResponse();
         }
 
-        LOG.info("location {}", location);
+        LOG.debug("location {}", response.getHeader("location"));
 
-        return response.location(location).build();
-    }
+        ServletUtils.applyHTTPResponse(response, resp);
+        return;
+	}
 
-    @GET
-    public Response authorizeGet() throws Exception {
-        return authorizePost();
-    }
+	@Override
+	protected void doGet(HttpServletRequest servletRequest, HttpServletResponse resp) throws ServletException, IOException {
+	   authorize(servletRequest, resp);
+	}
 
     /**
      * resolveAuthorizationRequest
      */
-    private AuthorizationRequest resolveAuthorizationRequest() throws ParseException {
+    private AuthorizationRequest resolveAuthorizationRequest(HttpServletRequest servletRequest) throws ParseException {
 
         if (isNotBlank(servletRequest.getParameter(CLIENT_ID_STR))) {
 			return AuthorizationRequest.parse(extractURI(servletRequest), requestParameters(servletRequest));
