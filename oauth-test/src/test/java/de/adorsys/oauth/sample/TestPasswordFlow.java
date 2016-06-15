@@ -79,6 +79,36 @@ public class TestPasswordFlow {
         SampleRequest.verify(accessToken);
     }
     
+    @Test @RunAsClient
+    public void testResourceOwnerPasswordFlowWithFormClientCredentials() throws Exception {
+    	RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+
+        Response response = given()
+        		.redirects().follow(false)
+                .contentType("application/x-www-form-urlencoded")
+                .formParam("grant_type", "password")
+                .formParam("username", "jduke")
+                .formParam("password", "1234")
+                .formParam("client_id", "sample")
+                .formParam("client_secret", "password")
+                .when()
+                .post(SampleRequest.TOKEN_ENDPOINT)
+                .then()
+                .statusCode(200)
+                .body("access_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("refresh_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("expires_in", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("token_type", Matchers.is("Bearer"))
+                .header("Pragma", "no-cache")
+                .header("Cache-Control", "no-store")
+                .extract().response()
+                ;
+        System.out.println(response.asString());
+        String accessToken = response.jsonPath().getString("access_token");
+
+        SampleRequest.verify(accessToken);
+    }
+    
     @BeforeClass
     public static void setLogging(){
     	RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
@@ -113,6 +143,7 @@ public class TestPasswordFlow {
                 .statusCode(400)
                 ;
     }
+    
     
     @Test @RunAsClient
     public void testResourceOwnerPasswordFlowWrongResourceOwnerCredentials() throws Exception {

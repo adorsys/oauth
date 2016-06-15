@@ -45,11 +45,17 @@ import com.nimbusds.jose.util.Base64;
 public class ClientCredentialsCheckFilter implements Filter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ClientCredentialsCheckFilter.class);
-	private String clientSecurityDomain = "client-auth"; //TODO must be possible to deaktivate
+	private String clientSecurityDomain = "client-auth";
+	private boolean checkClientCredentialsOnTokenRevoke;
 
 	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {
-
+		clientSecurityDomain = filterConfig.getServletContext().getInitParameter("clientCredentialsSecurityDomain");
+		if (clientSecurityDomain == null) {
+			clientSecurityDomain = "client-auth";
+		}
+		
+		checkClientCredentialsOnTokenRevoke = !"false".equals(filterConfig.getServletContext().getInitParameter("checkClientCredentialsOnTokenRevoke"));
 	}
 
 	@Override
@@ -76,21 +82,14 @@ public class ClientCredentialsCheckFilter implements Filter {
 	 * Check client credentials We expect the credentials as BASIC-Auth header
 	 */
 	private boolean verifyClientCredentials(HttpServletRequest httpRequest) {
-
-		if (clientSecurityDomain == null) {
-			// ignore auth if no security domain is configured
+		if (httpRequest.getRequestURI().endsWith("/api/revoke") && !checkClientCredentialsOnTokenRevoke) {
 			return true;
 		}
 
-		String authValue = httpRequest.getHeader("Authorization");
-		if (authValue == null || !authValue.startsWith("Basic ")) {
+		final String[] namePassword = getNamePassword(httpRequest);
+		if (namePassword == null) {
 			return false;
 		}
-
-		String encodedValue = authValue.substring(6);
-		String decodedValue = new Base64(encodedValue).decodeToString();
-		final String[] namePassword = decodedValue.contains(":") ? decodedValue.split(":")
-				: new String[] { decodedValue, "" };
 
 		CallbackHandler callbackHandler = new CallbackHandler() {
 			@Override
@@ -119,6 +118,26 @@ public class ClientCredentialsCheckFilter implements Filter {
 
 		return true;
 
+	}
+
+	private String[] getNamePassword(HttpServletRequest httpRequest) {
+		String authValue = httpRequest.getHeader("Authorization");
+		if (authValue != null && authValue.startsWith("Basic ")) {
+			String encodedValue = authValue.substring(6);
+			String decodedValue = new Base64(encodedValue).decodeToString();
+			final String[] namePassword = decodedValue.contains(":") ? decodedValue.split(":")
+					: new String[] { decodedValue, "" };
+			return namePassword;
+		} else if (httpRequest.getContentType().contains("application/x-www-form-urlencoded")) {
+			String clientId = httpRequest.getParameter("client_id");
+			String clientSecret = httpRequest.getParameter("client_secret");
+			if (clientId == null || clientSecret == null) {
+				return null;
+			}
+			return new String[]{clientId, clientSecret};
+		} else {
+			return null;			
+		}
 	}
 
 }
