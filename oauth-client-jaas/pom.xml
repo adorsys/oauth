@@ -23,7 +23,7 @@
 	<parent>
 		<groupId>de.adorsys.oauth</groupId>
 		<artifactId>oauth-parent</artifactId>
-		<version>0.21</version>
+		<version>0.22-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>oauth-client-jaas</artifactId>
