@@ -37,7 +37,7 @@ public class RememberMeMatcher implements AuthenticatorMatcher {
 	public boolean match(HttpServerExchange exchange, HttpServletRequest request) {
 
 		String clientId = request.getParameter("client_id");
-		if (!"/auth".equals(request.getPathInfo()) || clientId == null) {
+		if (!request.getRequestURI().endsWith("/auth") || clientId == null) {
 			return false;
 		}
 

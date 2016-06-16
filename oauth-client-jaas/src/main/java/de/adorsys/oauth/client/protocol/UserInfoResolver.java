@@ -81,12 +81,13 @@ public class UserInfoResolver {
 
             HttpCacheContext context = HttpCacheContext.create();
             CloseableHttpResponse userInfoResponse = cachingHttpClient.execute(httpGet, context);
+            
+            //TODO mask accessToken
             LOG.debug("read userinfo {} {}", OAuthCredentialHasher.hashCredential(accessToken.getValue()), context.getCacheResponseStatus());
-
             HttpEntity entity = userInfoResponse.getEntity();
-            if (entity==null){
-                LOG.debug("no userInfo available for {}", accessToken.getValue());
-                return null;
+            if (userInfoResponse.getStatusLine().getStatusCode() != 200 || entity == null) {
+            	LOG.debug("no userInfo available for {}", OAuthCredentialHasher.hashCredential(accessToken.getValue()));
+            	return null;
             }
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();

@@ -16,15 +16,23 @@
 package de.adorsys.oauth.server;
 
 import com.nimbusds.oauth2.sdk.OAuth2Error;
+import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.TokenErrorResponse;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
+import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.mail.internet.ContentType;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.Consumes;
@@ -37,31 +45,37 @@ import javax.ws.rs.core.Response;
 /**
  * TokenResource
  */
-@Path("revoke")
+@WebServlet("/api/revoke")
 @ApplicationScoped
 @SuppressWarnings("unused")
-public class RevokeResource {
+public class RevokeResource extends HttpServlet {
 
     private static final Logger LOG = LoggerFactory.getLogger(RevokeResource.class);
 
-    @Context
-    private HttpServletRequest servletRequest;
-
-    @Context
-    private HttpServletResponse servletResponse;
-
     @Inject
     private TokenStore tokenStore;
+    
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    	String token = req.getParameter("token");
+    	String tokenTypeHint = req.getParameter("token_type_hint");
+    	revoke(token, tokenTypeHint, req, resp);
+    }
 
-    @POST
-    @Consumes("application/x-www-form-urlencoded")
-    public Response revoke(@FormParam("token") String token, @FormParam("token_type_hint") String tokenTypeHint) throws Exception {
+    public void revoke(@FormParam("token") String token, @FormParam("token_type_hint") String tokenTypeHint, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException {
     	if (token == null) {
     		ServletUtils.applyHTTPResponse(
                     new TokenErrorResponse(OAuth2Error.INVALID_GRANT).toHTTPResponse(), servletResponse);
-    		return null;
+    		return;
     	}
-    	ClientAuthentication clientAuthentication = ClientAuthentication.parse(FixedServletUtils.createHTTPRequest(servletRequest));
+    	ClientAuthentication clientAuthentication;
+		try {
+			clientAuthentication = ClientAuthentication.parse(FixedServletUtils.createHTTPRequest(servletRequest));
+		} catch (ParseException e) {
+			ServletUtils.applyHTTPResponse(
+                    new TokenErrorResponse(OAuth2Error.INVALID_CLIENT).toHTTPResponse(), servletResponse);
+			return;
+		}
     	
     	
     	if ("login_session".equals(tokenTypeHint)) {
@@ -71,8 +85,11 @@ public class RevokeResource {
     	} else {
     		tokenStore.remove(token, clientAuthentication.getClientID());    		
     	}
-
-		return Response.ok("token revoked").header("Pragma", "no-cache").header("Cache-Control", "no-store").build();
+    	HTTPResponse httpResponse = new HTTPResponse(HTTPResponse.SC_OK);
+    	httpResponse.setHeader("Content-Type", "text/plain");
+    	httpResponse.setHeader("Pragma", "no-cache");
+    	httpResponse.setHeader("Cache-Control", "no-store");
+    	ServletUtils.applyHTTPResponse(httpResponse, servletResponse);
     }
    
 }

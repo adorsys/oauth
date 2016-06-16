@@ -50,7 +50,7 @@ public class RememberMeAuthMatcher extends BaseAuthenticatorMatcher {
 
 	@Override
 	public ValveBase match(HttpServletRequest request, AuthorizationRequest authorizationRequest) {
-		if (!"/auth".equals(request.getPathInfo()) || authorizationRequest == null || authorizationRequest.getClientID() == null) {
+		if (!request.getRequestURI().endsWith("/auth") || authorizationRequest == null || authorizationRequest.getClientID() == null) {
 			return null;
 		}
 		if(!shouldRememberMe(request)) {
