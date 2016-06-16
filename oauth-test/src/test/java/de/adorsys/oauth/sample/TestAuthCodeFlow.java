@@ -87,6 +87,7 @@ public class TestAuthCodeFlow {
 
 
         response = given()
+        		.log().ifValidationFails()
                 .redirects().follow(false)
                 .formParam("j_username", "jduke")
                 .formParam("j_password", "1234")

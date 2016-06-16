@@ -80,7 +80,7 @@ public class RememberMeLoginModule implements LoginModule {
 
 	@Override
 	public boolean login() throws LoginException {
-		if(!"/auth".equals(request.getPathInfo())) {
+		if(!request.getRequestURI().endsWith("/auth")) {
 			return false;
 		}
 		AuthorizationRequest authorizationRequest;

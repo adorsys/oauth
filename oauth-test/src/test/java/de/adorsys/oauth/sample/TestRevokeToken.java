@@ -26,6 +26,7 @@ import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,8 +55,8 @@ public class TestRevokeToken {
                 ;
     }
 
-    @BeforeClass
-    public static void setLogging(){
+    @Before
+    public void setLogging(){
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
@@ -182,7 +183,6 @@ public class TestRevokeToken {
 
         //redirect to login
         given()
-                .log().ifValidationFails()
                 .redirects().follow(false)
                 .authentication().oauth2(accessToken)
                 .when()

@@ -33,7 +33,8 @@ public class FormAuthAuthenticatorMatcher extends BaseAuthenticatorMatcher {
 
 	@Override
 	public ValveBase match(HttpServletRequest request, AuthorizationRequest authorizationRequest) {
-		return request.getMethod().equalsIgnoreCase("POST") && authorizationRequest != null && "/auth".equals(request.getPathInfo()) ? valve : null;
+		LOG.error("PATHINFO: {}", request.getRequestURI());
+		return request.getMethod().equalsIgnoreCase("POST") && authorizationRequest != null && request.getRequestURI().endsWith("/auth") ? valve : null;
 	}
 
 }
