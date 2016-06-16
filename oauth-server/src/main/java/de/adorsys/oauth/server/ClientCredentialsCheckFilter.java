@@ -40,6 +40,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nimbusds.jose.util.Base64;
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
+import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
 
 @WebFilter(urlPatterns = {"/api/token", "/api/revoke"}, dispatcherTypes = { DispatcherType.REQUEST, DispatcherType.FORWARD})
 public class ClientCredentialsCheckFilter implements Filter {
@@ -80,27 +83,36 @@ public class ClientCredentialsCheckFilter implements Filter {
 
 	/**
 	 * Check client credentials We expect the credentials as BASIC-Auth header
+	 * @throws IOException 
 	 */
-	private boolean verifyClientCredentials(HttpServletRequest httpRequest) {
+	private boolean verifyClientCredentials(HttpServletRequest httpRequest) throws IOException {
 		if (httpRequest.getRequestURI().endsWith("/api/revoke") && !checkClientCredentialsOnTokenRevoke) {
 			return true;
 		}
-
-		final String[] namePassword = getNamePassword(httpRequest);
-		if (namePassword == null) {
-			return false;
+		
+		ClientAuthentication clientAuth;
+        try {
+            clientAuth = ClientAuthentication.parse(FixedServletUtils.createHTTPRequest(httpRequest));
+        } catch (ParseException e) {
+            throw new IOException(e);
+        }
+		if (!(clientAuth instanceof PlainClientSecret)) {
+		    //acctually we dont support JWT
+		    return false;
 		}
+		
+        final PlainClientSecret plainClientSecret = (PlainClientSecret) clientAuth;
 
 		CallbackHandler callbackHandler = new CallbackHandler() {
 			@Override
 			public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
 				for (Callback callback : callbacks) {
 					if (callback instanceof NameCallback) {
-						((NameCallback) callback).setName(namePassword[0]);
+						((NameCallback) callback).setName(plainClientSecret.getClientID().getValue());
 						continue;
 					}
 					if (callback instanceof PasswordCallback) {
-						((PasswordCallback) callback).setPassword(namePassword[1].toCharArray());
+						((PasswordCallback) callback).setPassword(plainClientSecret.getClientSecret().getValue().toCharArray());
 					}
 				}
 			}

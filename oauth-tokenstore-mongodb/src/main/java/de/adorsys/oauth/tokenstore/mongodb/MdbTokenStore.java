@@ -49,7 +49,7 @@ import net.minidev.json.JSONObject;
  * MdbTokenStore
  */
 @Singleton
-@SuppressWarnings({"unused", "unchecked"})
+@SuppressWarnings({"unchecked"})
 public class MdbTokenStore implements TokenStore {
 
     private static final Logger LOG = LoggerFactory.getLogger(MdbTokenStore.class);
@@ -106,9 +106,15 @@ public class MdbTokenStore implements TokenStore {
 
     @Override
     public void remove(String id, ClientID clientId) {
-        DeleteResult result = collection.deleteOne(new Document("_id", id).append("clientId", clientId.getValue()));
+        Document query = new Document("_id", id);
+        Document refreshQuery = new Document("refreshTokenRef", id);
+        if (clientId != null) {
+            query.append("clientId", clientId.getValue());
+            refreshQuery.append("clientId", clientId.getValue());
+        }
+        DeleteResult result = collection.deleteOne(query);
         LOG.debug("delete {} : {} tokens", id, result.getDeletedCount());
-        result = collection.deleteMany(new Document("refreshTokenRef", id).append("clientId", clientId.getValue()));
+        result = collection.deleteMany(refreshQuery);
         LOG.debug("delete {} : {} access tokens", id, result.getDeletedCount());
     }
 

@@ -190,4 +190,55 @@ public class TestRevokeToken {
                 .then()
                 .statusCode(302);
     }
+    
+    @Test @RunAsClient
+    public void testRevokeTokenNoCLientId() throws Exception {
+        //create a token
+        Response response = given()
+                .redirects().follow(false)
+                .contentType("application/x-www-form-urlencoded")
+                .authentication().basic("sample", "password")
+                .formParam("grant_type", "password")
+                .formParam("username", "jduke")
+                .formParam("password", "1234")
+                .when()
+                .post(SampleRequest.TOKEN_ENDPOINT)
+                .then()
+                .statusCode(200)
+                .body("access_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("refresh_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("expires_in", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("token_type", Matchers.is("Bearer"))
+                .header("Pragma", "no-cache")
+                .header("Cache-Control", "no-store")
+                .extract().response()
+                ;
+        String accessToken = response.jsonPath().getString("access_token");
+        String refreshToken = response.jsonPath().getString("refresh_token");
+
+        //revoke the token
+        given()
+                .redirects().follow(false)
+                .contentType("application/x-www-form-urlencoded")
+                .formParam("token", refreshToken)
+                .formParam("username", "jduke")
+                .formParam("password", "1234")
+                .when()
+                .post(SampleRequest.REVOKE_ENDPOINT)
+                .then()
+                .statusCode(200)
+                .header("Pragma", "no-cache")
+                .header("Cache-Control", "no-store")
+                .extract().response()
+        ;
+
+        //redirect to login
+        given()
+                .redirects().follow(false)
+                .authentication().oauth2(accessToken)
+                .when()
+                .get(SampleRequest.SAMPLE_URL)
+                .then()
+                .statusCode(302);
+    }
 }

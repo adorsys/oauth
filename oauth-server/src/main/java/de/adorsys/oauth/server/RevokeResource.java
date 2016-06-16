@@ -21,6 +21,7 @@ import com.nimbusds.oauth2.sdk.TokenErrorResponse;
 import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
 import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
+import com.nimbusds.oauth2.sdk.id.ClientID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,42 +55,43 @@ public class RevokeResource extends HttpServlet {
 
     @Inject
     private TokenStore tokenStore;
-    
+
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-    	String token = req.getParameter("token");
-    	String tokenTypeHint = req.getParameter("token_type_hint");
-    	revoke(token, tokenTypeHint, req, resp);
+        String token = req.getParameter("token");
+        String tokenTypeHint = req.getParameter("token_type_hint");
+        revoke(token, tokenTypeHint, req, resp);
     }
 
-    public void revoke(@FormParam("token") String token, @FormParam("token_type_hint") String tokenTypeHint, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException {
-    	if (token == null) {
-    		ServletUtils.applyHTTPResponse(
-                    new TokenErrorResponse(OAuth2Error.INVALID_GRANT).toHTTPResponse(), servletResponse);
-    		return;
-    	}
-    	ClientAuthentication clientAuthentication;
-		try {
-			clientAuthentication = ClientAuthentication.parse(FixedServletUtils.createHTTPRequest(servletRequest));
-		} catch (ParseException e) {
-			ServletUtils.applyHTTPResponse(
-                    new TokenErrorResponse(OAuth2Error.INVALID_CLIENT).toHTTPResponse(), servletResponse);
-			return;
-		}
-    	
-    	
-    	if ("login_session".equals(tokenTypeHint)) {
+    public void revoke(@FormParam("token") String token, @FormParam("token_type_hint") String tokenTypeHint,
+            HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException {
+        if (token == null) {
+            ServletUtils.applyHTTPResponse(new TokenErrorResponse(OAuth2Error.INVALID_GRANT).toHTTPResponse(),
+                    servletResponse);
+            return;
+        }
+        ClientID clientId = null;
+        try {
+            ClientAuthentication clientAuth = ClientAuthentication.parse(FixedServletUtils.createHTTPRequest(servletRequest));
+            if (clientAuth != null) {
+                clientId = clientAuth.getClientID();
+            }
+        } catch (ParseException e) {
+            // ignore; no clientid given
+        }
+
+        if ("login_session".equals(tokenTypeHint)) {
             LoginSessionToken loginSessionToken = new LoginSessionToken(token);
             tokenStore.remove(loginSessionToken);
             tokenStore.invalidateLoginSession(loginSessionToken);
-    	} else {
-    		tokenStore.remove(token, clientAuthentication.getClientID());    		
-    	}
-    	HTTPResponse httpResponse = new HTTPResponse(HTTPResponse.SC_OK);
-    	httpResponse.setHeader("Content-Type", "text/plain");
-    	httpResponse.setHeader("Pragma", "no-cache");
-    	httpResponse.setHeader("Cache-Control", "no-store");
-    	ServletUtils.applyHTTPResponse(httpResponse, servletResponse);
+        } else {
+            tokenStore.remove(token, clientId);
+        }
+        HTTPResponse httpResponse = new HTTPResponse(HTTPResponse.SC_OK);
+        httpResponse.setHeader("Content-Type", "text/plain");
+        httpResponse.setHeader("Pragma", "no-cache");
+        httpResponse.setHeader("Cache-Control", "no-store");
+        ServletUtils.applyHTTPResponse(httpResponse, servletResponse);
     }
-   
+
 }

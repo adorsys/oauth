@@ -60,13 +60,15 @@ public class UserInfoResolver {
                 .build();
 
         RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(30000)
-                .setSocketTimeout(30000)
+                .setConnectTimeout(3000)
+                .setConnectionRequestTimeout(3000)
+                .setSocketTimeout(3000)
                 .build();
 
         cachingHttpClient = CachingHttpClients.custom()
                 .setCacheConfig(cacheConfig)
                 .setDefaultRequestConfig(requestConfig)
+                .setMaxConnTotal(50)
                 .build();
         return this;
     }
@@ -80,20 +82,20 @@ public class UserInfoResolver {
             httpGet.setHeader("Authorization", new BearerAccessToken(accessToken.getValue()).toAuthorizationHeader());
 
             HttpCacheContext context = HttpCacheContext.create();
-            CloseableHttpResponse userInfoResponse = cachingHttpClient.execute(httpGet, context);
-            
-            //TODO mask accessToken
-            LOG.debug("read userinfo {} {}", OAuthCredentialHasher.hashCredential(accessToken.getValue()), context.getCacheResponseStatus());
-            HttpEntity entity = userInfoResponse.getEntity();
-            if (userInfoResponse.getStatusLine().getStatusCode() != 200 || entity == null) {
-            	LOG.debug("no userInfo available for {}", OAuthCredentialHasher.hashCredential(accessToken.getValue()));
-            	return null;
+            try (CloseableHttpResponse userInfoResponse = cachingHttpClient.execute(httpGet, context)){
+                //TODO mask accessToken
+                LOG.debug("read userinfo {} {}", OAuthCredentialHasher.hashCredential(accessToken.getValue()), context.getCacheResponseStatus());
+                HttpEntity entity = userInfoResponse.getEntity();
+                if (userInfoResponse.getStatusLine().getStatusCode() != 200 || entity == null) {
+                	LOG.debug("no userInfo available for {}", OAuthCredentialHasher.hashCredential(accessToken.getValue()));
+                	return null;
+                }
+    
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                entity.writeTo(baos);
+    
+                return UserInfo.parse(baos.toString());
             }
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            entity.writeTo(baos);
-
-            return UserInfo.parse(baos.toString());
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
