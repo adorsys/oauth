@@ -11,6 +11,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.servlet.api.LoginConfig;
 import io.undertow.servlet.handlers.ServletRequestContext;
 import io.undertow.servlet.spec.ServletContextImpl;
+import io.undertow.util.Methods;
 
 /**
  * FormAuthenticationMatcher
@@ -19,20 +20,34 @@ public class FormAuthenticationMatcher implements AuthenticatorMatcher {
 
     private static final String FORM_PASSWORD = "j_password";
     private static final String FORM_USERNAME = "j_username";
+    private static final String DEFAULT_LOGIN_ERROR_PAGE = "/loginError.jsp";
+    private static final String DEFAULT_LOGIN_PAGE = "/login.jsp";
+    private static final String DEFAULT_POST_LOCATION = "/api/auth";
 
     private String loginPage;
+    private String loginErrorPage;
 
     @Override
     public void initialize(ServletContext servletContext) {
         ServletContextImpl contextImpl = (ServletContextImpl) servletContext;
         loginPage = resolveLoginPage(contextImpl);
+        loginErrorPage = resolveLoginErrorPage(contextImpl);
+    }
+
+    private String resolveLoginErrorPage(ServletContextImpl contextImpl) {
+        LoginConfig loginConfig = contextImpl.getDeployment().getDeploymentInfo().getLoginConfig();
+        String result = loginConfig == null ? null : loginConfig.getErrorPage();
+        if (result == null) {
+            result = DEFAULT_LOGIN_ERROR_PAGE;
+        }
+        return result;
     }
 
     private String resolveLoginPage(ServletContextImpl contextImpl) {
         LoginConfig loginConfig = contextImpl.getDeployment().getDeploymentInfo().getLoginConfig();
         String result = loginConfig == null ? null : loginConfig.getLoginPage();
         if (result == null) {
-            result = "/login.jsp";
+            result = DEFAULT_LOGIN_PAGE;
         }
         return result;
     }
@@ -61,23 +76,31 @@ public class FormAuthenticationMatcher implements AuthenticatorMatcher {
             return AuthenticationMechanismOutcome.AUTHENTICATED;
         }
 
-        return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
+        return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
     }
 
     @Override
     public ChallengeResult sendChallenge(HttpServerExchange exchange, SecurityContext securityContext) {
+        String forwardTo = loginPage;
+        if (exchange.getRequestURI().endsWith(DEFAULT_POST_LOCATION) && exchange.getRequestMethod().equals(Methods.POST)) {
+            forwardTo = loginErrorPage;
+        }
+        forward(exchange, forwardTo);
+        return new ChallengeResult(false);
+    }
+
+    private void forward(HttpServerExchange exchange, String page) {
         ServletRequestContext servletRequestContext = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
         HttpServletRequest request = servletRequestContext.getOriginalRequest();
 
-        RequestDispatcher requestDispatcher = request.getRequestDispatcher(loginPage);
+        RequestDispatcher requestDispatcher = request.getRequestDispatcher(page);
         try {
             requestDispatcher.forward(request, servletRequestContext.getServletResponse());
         } catch (Exception e) {
             //  throw new RuntimeException(e);
         }
-        return new ChallengeResult(false);
     }
 
 
-
 }
+
