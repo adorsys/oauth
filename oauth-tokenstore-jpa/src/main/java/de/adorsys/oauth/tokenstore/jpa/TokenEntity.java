@@ -51,12 +51,12 @@ import java.util.Date;
 @Entity
 @Table(name = "TOKEN_ENTITY")
 @NamedQueries({
-    @NamedQuery(name = TokenEntity.FIND_REFRESHTOKEN, query = "select t from TokenEntity t where t.loginSession = :loginSession")
+    @NamedQuery(name = TokenEntity.DELETE_BY_LOGINSESSION, query = "delete from TokenEntity t where t.loginSession = :loginSession")
 })
 @SuppressWarnings({"FieldCanBeLocal", "unused"})
 public class TokenEntity {
 
-    static final String FIND_REFRESHTOKEN = "FIND_REFRESHTOKEN";
+    static final String DELETE_BY_LOGINSESSION = "FIND_REFRESHTOKEN";
 
     @Id
     @Column(name = "ID")
