@@ -76,6 +76,10 @@ public class TestImplicitFlow {
                 .extract();
         String location = response.header("Location");
         System.out.println("\nredirect " + location);
+        
+        //link contains login_session param
+        Assert.assertTrue(location.indexOf("login_session") > -1);
+        
         int startIndexAccessToken = location.indexOf("access_token") + 13;
 		int endIndexAccessToken = location.indexOf("&", startIndexAccessToken);
 		String accessToken = location.substring(startIndexAccessToken, endIndexAccessToken == -1 ? location.length() : endIndexAccessToken);

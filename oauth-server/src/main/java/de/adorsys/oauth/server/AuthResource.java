@@ -161,7 +161,7 @@ public class AuthResource extends HttpServlet {
             LOG.debug("impliesTokenFlow {}", accessToken.toJSONString());
             tokenStore.addAccessToken(accessToken, userInfo, request.getClientID(), null);
 
-            response = new AuthorizationSuccessResponse(request.getRedirectionURI(), null, accessToken, request.getState(), request.getResponseMode()).toHTTPResponse();
+            response = new LoginSessionAuthorizationSuccessResponse(request.getRedirectionURI(), null, accessToken, request.getState(), request.getResponseMode(), loginSession).toHTTPResponse();
         }
 
         LOG.debug("location {}", response.getHeader("location"));
