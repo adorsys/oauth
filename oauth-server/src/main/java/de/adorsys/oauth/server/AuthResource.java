@@ -44,6 +44,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.Enumeration;
@@ -99,25 +100,26 @@ public class AuthResource extends HttpServlet {
 		}
 
         
-        if (request.getRedirectionURI() == null) {
+        URI redirectionURI = request.getRedirectionURI();
+        if (redirectionURI == null) {
         	ServletUtils.applyHTTPResponse(new AuthorizationErrorResponse(request.getEndpointURI(), OAuth2Error.INVALID_REQUEST, request.getState(), request.getResponseMode()).toHTTPResponse(), resp);
         	return;
         }
 
         if (servletRequest.getUserPrincipal() == null) {
         	ServletUtils.applyHTTPResponse(
-                    new AuthorizationErrorResponse(request.getRedirectionURI(), OAuth2Error.UNAUTHORIZED_CLIENT, request.getState(), request.getResponseMode()).toHTTPResponse(), resp);
+                    new AuthorizationErrorResponse(redirectionURI, OAuth2Error.UNAUTHORIZED_CLIENT, request.getState(), request.getResponseMode()).toHTTPResponse(), resp);
         	return;
         }
 
         if (request.getClientID() == null) {
         	ServletUtils.applyHTTPResponse(
-                    new AuthorizationErrorResponse(request.getRedirectionURI(), OAuth2Error.INVALID_CLIENT, request.getState(), request.getResponseMode()).toHTTPResponse(), resp);
+                    new AuthorizationErrorResponse(redirectionURI, OAuth2Error.INVALID_CLIENT, request.getState(), request.getResponseMode()).toHTTPResponse(), resp);
         }
 
         if (request.getResponseType() == null) {
         	ServletUtils.applyHTTPResponse(
-                    new AuthorizationErrorResponse(request.getRedirectionURI(), OAuth2Error.UNSUPPORTED_RESPONSE_TYPE, request.getState(), request.getResponseMode()).toHTTPResponse(), resp);
+                    new AuthorizationErrorResponse(redirectionURI, OAuth2Error.UNSUPPORTED_RESPONSE_TYPE, request.getState(), request.getResponseMode()).toHTTPResponse(), resp);
         }
 
         LoginSessionToken loginSession = (LoginSessionToken) servletRequest.getAttribute("loginSession");
@@ -152,16 +154,16 @@ public class AuthResource extends HttpServlet {
 		if (request.getResponseType().impliesCodeFlow()) {
         	AuthorizationCode authCode = new AuthorizationCode();
             LOG.debug("impliesCodeFlow {}", authCode.toJSONString());
-			tokenStore.addAuthCode(authCode, userInfo, request.getClientID(), loginSession, request.getRedirectionURI());
+			tokenStore.addAuthCode(authCode, userInfo, request.getClientID(), loginSession, redirectionURI);
 
-			response = new AuthorizationSuccessResponse(request.getRedirectionURI(), authCode, null, request.getState(), request.getResponseMode()).toHTTPResponse();
+			response = new AuthorizationSuccessResponse(redirectionURI, authCode, null, request.getState(), request.getResponseMode()).toHTTPResponse();
 
         } else {
-
             LOG.debug("impliesTokenFlow {}", accessToken.toJSONString());
             tokenStore.addAccessToken(accessToken, userInfo, request.getClientID(), null);
-
-            response = new AuthorizationSuccessResponse(request.getRedirectionURI(), null, accessToken, request.getState(), request.getResponseMode()).toHTTPResponse();
+            
+            URI cleanUrl = getCleanUrl(redirectionURI);
+            response = new LoginSessionAuthorizationSuccessResponse(cleanUrl, null, accessToken, request.getState(), request.getResponseMode(), loginSession, redirectionURI.getFragment()).toHTTPResponse();
         }
 
         LOG.debug("location {}", response.getHeader("location"));
@@ -169,6 +171,17 @@ public class AuthResource extends HttpServlet {
         ServletUtils.applyHTTPResponse(response, resp);
         return;
 	}
+
+    private URI getCleanUrl(URI redirectionURI) {
+        String fragmentsOfSpa = redirectionURI.getFragment();
+        URI cleanUrl;
+        try {
+            cleanUrl = new URI(redirectionURI.toString().replace("#" + fragmentsOfSpa, ""));
+        } catch (URISyntaxException e) {
+            throw new OAuthException("clean url cant be parsed", null);
+        }
+        return cleanUrl;
+    }
 
 	@Override
 	protected void doGet(HttpServletRequest servletRequest, HttpServletResponse resp) throws ServletException, IOException {

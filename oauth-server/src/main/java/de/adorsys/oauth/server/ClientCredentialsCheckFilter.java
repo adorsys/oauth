@@ -40,16 +40,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.nimbusds.jose.util.Base64;
+import com.nimbusds.oauth2.sdk.ParseException;
+import com.nimbusds.oauth2.sdk.auth.ClientAuthentication;
+import com.nimbusds.oauth2.sdk.auth.PlainClientSecret;
 
 @WebFilter(urlPatterns = {"/api/token", "/api/revoke"}, dispatcherTypes = { DispatcherType.REQUEST, DispatcherType.FORWARD})
 public class ClientCredentialsCheckFilter implements Filter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ClientCredentialsCheckFilter.class);
-	private String clientSecurityDomain = "client-auth"; //TODO must be possible to deaktivate
+	private String clientSecurityDomain = "client-auth";
+	private boolean checkClientCredentialsOnTokenRevoke;
 
 	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {
-
+		clientSecurityDomain = filterConfig.getServletContext().getInitParameter("clientCredentialsSecurityDomain");
+		if (clientSecurityDomain == null) {
+			clientSecurityDomain = "client-auth";
+		}
+		
+		checkClientCredentialsOnTokenRevoke = !"false".equals(filterConfig.getServletContext().getInitParameter("checkClientCredentialsOnTokenRevoke"));
 	}
 
 	@Override
@@ -74,34 +83,36 @@ public class ClientCredentialsCheckFilter implements Filter {
 
 	/**
 	 * Check client credentials We expect the credentials as BASIC-Auth header
+	 * @throws IOException 
 	 */
-	private boolean verifyClientCredentials(HttpServletRequest httpRequest) {
-
-		if (clientSecurityDomain == null) {
-			// ignore auth if no security domain is configured
+	private boolean verifyClientCredentials(HttpServletRequest httpRequest) throws IOException {
+		if (httpRequest.getRequestURI().endsWith("/api/revoke") && !checkClientCredentialsOnTokenRevoke) {
 			return true;
 		}
-
-		String authValue = httpRequest.getHeader("Authorization");
-		if (authValue == null || !authValue.startsWith("Basic ")) {
-			return false;
+		
+		ClientAuthentication clientAuth;
+        try {
+            clientAuth = ClientAuthentication.parse(FixedServletUtils.createHTTPRequest(httpRequest));
+        } catch (ParseException e) {
+            throw new IOException(e);
+        }
+		if (!(clientAuth instanceof PlainClientSecret)) {
+		    //acctually we dont support JWT
+		    return false;
 		}
-
-		String encodedValue = authValue.substring(6);
-		String decodedValue = new Base64(encodedValue).decodeToString();
-		final String[] namePassword = decodedValue.contains(":") ? decodedValue.split(":")
-				: new String[] { decodedValue, "" };
+		
+        final PlainClientSecret plainClientSecret = (PlainClientSecret) clientAuth;
 
 		CallbackHandler callbackHandler = new CallbackHandler() {
 			@Override
 			public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
 				for (Callback callback : callbacks) {
 					if (callback instanceof NameCallback) {
-						((NameCallback) callback).setName(namePassword[0]);
+						((NameCallback) callback).setName(plainClientSecret.getClientID().getValue());
 						continue;
 					}
 					if (callback instanceof PasswordCallback) {
-						((PasswordCallback) callback).setPassword(namePassword[1].toCharArray());
+						((PasswordCallback) callback).setPassword(plainClientSecret.getClientSecret().getValue().toCharArray());
 					}
 				}
 			}
@@ -119,6 +130,26 @@ public class ClientCredentialsCheckFilter implements Filter {
 
 		return true;
 
+	}
+
+	private String[] getNamePassword(HttpServletRequest httpRequest) {
+		String authValue = httpRequest.getHeader("Authorization");
+		if (authValue != null && authValue.startsWith("Basic ")) {
+			String encodedValue = authValue.substring(6);
+			String decodedValue = new Base64(encodedValue).decodeToString();
+			final String[] namePassword = decodedValue.contains(":") ? decodedValue.split(":")
+					: new String[] { decodedValue, "" };
+			return namePassword;
+		} else if (httpRequest.getContentType().contains("application/x-www-form-urlencoded")) {
+			String clientId = httpRequest.getParameter("client_id");
+			String clientSecret = httpRequest.getParameter("client_secret");
+			if (clientId == null || clientSecret == null) {
+				return null;
+			}
+			return new String[]{clientId, clientSecret};
+		} else {
+			return null;			
+		}
 	}
 
 }
