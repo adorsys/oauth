@@ -159,12 +159,11 @@ public class AuthResource extends HttpServlet {
 			response = new AuthorizationSuccessResponse(redirectionURI, authCode, null, request.getState(), request.getResponseMode()).toHTTPResponse();
 
         } else {
-
             LOG.debug("impliesTokenFlow {}", accessToken.toJSONString());
             tokenStore.addAccessToken(accessToken, userInfo, request.getClientID(), null);
             
             URI cleanUrl = getCleanUrl(redirectionURI);
-            response = new AuthorizationSuccessResponse(cleanUrl, null, accessToken, request.getState(), request.getResponseMode()).toHTTPResponse();
+            response = new LoginSessionAuthorizationSuccessResponse(cleanUrl, null, accessToken, request.getState(), request.getResponseMode(), loginSession, redirectionURI.getFragment()).toHTTPResponse();
         }
 
         LOG.debug("location {}", response.getHeader("location"));
