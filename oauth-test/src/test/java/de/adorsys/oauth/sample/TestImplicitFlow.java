@@ -66,7 +66,7 @@ public class TestImplicitFlow {
                 .queryParam("response_type", "token")
                 .queryParam("client_id", "sample")
                 .queryParam("state", generatedState)
-                .queryParam("redirect_uri", SampleRequest.SAMPLE_URL)
+                .queryParam("redirect_uri", SampleRequest.SAMPLE_URL + "#/page")
                 .formParam("j_username", "jduke")
         		.formParam("j_password", "1234")
                 .when()
