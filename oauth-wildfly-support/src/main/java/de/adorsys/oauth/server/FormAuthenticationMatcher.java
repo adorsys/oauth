@@ -1,9 +1,5 @@
 package de.adorsys.oauth.server;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-
 import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.PasswordCredential;
@@ -12,6 +8,10 @@ import io.undertow.servlet.api.LoginConfig;
 import io.undertow.servlet.handlers.ServletRequestContext;
 import io.undertow.servlet.spec.ServletContextImpl;
 import io.undertow.util.Methods;
+
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * FormAuthenticationMatcher
@@ -67,7 +67,10 @@ public class FormAuthenticationMatcher implements AuthenticatorMatcher {
             String username = request.getParameter(FORM_USERNAME);
             String password = request.getParameter(FORM_PASSWORD);
 
-            Account account = securityContext.getIdentityManager().verify(username, new PasswordCredential(password.toCharArray()));
+            Account account = password ==  null || username == null
+                    ? null
+                    : securityContext.getIdentityManager().verify(username, new PasswordCredential(password.toCharArray()));
+
             if (account == null) {
                 return AuthenticationMechanismOutcome.NOT_AUTHENTICATED;
             }
