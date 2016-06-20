@@ -165,15 +165,17 @@ public class JpaTokenStore implements TokenStore {
 
     @Override
     public void removeLoginSession(LoginSessionToken sessionId) {
-        LoginSessionEntity loginSessionEntity = entityManager.find(LoginSessionEntity.class, sessionId.getValue());
-        entityManager.remove(loginSessionEntity);
+        entityManager.createNamedQuery(LoginSessionEntity.DELETE_LOGIN_SESSION).setParameter("id", sessionId.getValue()).executeUpdate();
     }
 
     @Override
     public void remove(LoginSessionToken loginSessionToken) {
-        Query query = entityManager.createNamedQuery(TokenEntity.DELETE_BY_LOGINSESSION);
-        query.setParameter("loginSession", loginSessionToken.getValue());
-        query.executeUpdate();
+        Query queryDeleteATokens = entityManager.createNamedQuery(TokenEntity.DELETE_ACCESS_TOKEN_BY_LOGINSESSION);
+        queryDeleteATokens.setParameter("loginSession", loginSessionToken.getValue());
+        queryDeleteATokens.executeUpdate();
+        Query queryDeleteRTokens = entityManager.createNamedQuery(TokenEntity.DELETE_REFRESH_TOKEN_BY_LOGINSESSION);
+        queryDeleteRTokens.setParameter("loginSession", loginSessionToken.getValue());
+        queryDeleteRTokens.executeUpdate();
     }
 
     @Override
