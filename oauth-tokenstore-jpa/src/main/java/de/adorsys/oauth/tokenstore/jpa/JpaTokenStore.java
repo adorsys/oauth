@@ -23,6 +23,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,7 +167,11 @@ public class JpaTokenStore implements TokenStore {
     @Override
     public void removeLoginSession(LoginSessionToken sessionId) {
         LoginSessionEntity loginSessionEntity = entityManager.find(LoginSessionEntity.class, sessionId.getValue());
-        entityManager.remove(loginSessionEntity);
+        if (loginSessionEntity !=  null) {
+            entityManager.remove(loginSessionEntity);
+        } else {
+            LOG.debug("Keine LoginSession unter der ID {} gefunden.", sessionId.getValue());
+        }
     }
 
     @Override
