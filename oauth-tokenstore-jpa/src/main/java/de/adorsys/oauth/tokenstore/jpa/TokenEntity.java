@@ -51,12 +51,14 @@ import java.util.Date;
 @Entity
 @Table(name = "TOKEN_ENTITY")
 @NamedQueries({
-    @NamedQuery(name = TokenEntity.DELETE_BY_LOGINSESSION, query = "delete from TokenEntity t where t.loginSession = :loginSession")
+    @NamedQuery(name = TokenEntity.DELETE_ACCESS_TOKEN_BY_LOGINSESSION, query = "delete from TokenEntity t where t.loginSession = :loginSession and t.refreshToken is not null"),
+    @NamedQuery(name = TokenEntity.DELETE_REFRESH_TOKEN_BY_LOGINSESSION, query = "delete from TokenEntity t where t.loginSession = :loginSession and t.refreshToken is null")
 })
 @SuppressWarnings({"FieldCanBeLocal", "unused"})
 public class TokenEntity {
 
-    static final String DELETE_BY_LOGINSESSION = "FIND_REFRESHTOKEN";
+    static final String DELETE_ACCESS_TOKEN_BY_LOGINSESSION = "DELETE_ACCESS_TOKEN_BY_LOGINSESSION";
+    static final String DELETE_REFRESH_TOKEN_BY_LOGINSESSION = "DELETE_REFRESH_TOKEN_BY_LOGINSESSION";
 
     @Id
     @Column(name = "ID")
@@ -181,8 +183,18 @@ public class TokenEntity {
     public ClientID getClientId() {
         return new ClientID(clientId);
     }
+    
 
-    public LoginSessionToken getLoginSession() {
+    public void setLoginSession(String loginSession) {
+        this.loginSession = loginSession;
+    }
+    
+
+    public String getLoginSession() {
+        return loginSession;
+    }
+
+    public LoginSessionToken getLoginSessionToken() {
         return loginSession == null ? null : new LoginSessionToken(loginSession);
     }
 }

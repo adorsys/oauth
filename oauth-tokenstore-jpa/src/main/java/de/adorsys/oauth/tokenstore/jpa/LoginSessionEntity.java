@@ -50,8 +50,11 @@ import java.util.Date;
 
 @Entity
 @Table(name = "LOGIN_SESSION_ENTITY")
+@NamedQuery(name=LoginSessionEntity.DELETE_LOGIN_SESSION, query="DELETE FROM LoginSessionEntity where id =:id")
 @SuppressWarnings({"FieldCanBeLocal", "unused"})
 public class LoginSessionEntity {
+    
+    public static final String DELETE_LOGIN_SESSION = "DELETE_LOGIN_SESSION";
 
     @Id
     @Column(name = "ID")
