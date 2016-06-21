@@ -130,13 +130,12 @@ public class TokenResource extends HttpServlet {
                     servletResponse);
             return;
     	}
-    	
+    	RefreshToken refreshToken = new RefreshToken();
+    	tokenStore.addRefreshToken(refreshToken,  refreshTokeMetadata.getUserInfo(), refreshTokeMetadata.getClientId(), refreshTokeMetadata.getLoginSession());
     	BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
+    	tokenStore.addAccessToken(accessToken, refreshTokeMetadata.getUserInfo(), refreshTokeMetadata.getClientId(), refreshToken);
+    	
     	tokenStore.remove(refreshTokeMetadata.getRefreshToken().getValue(), refreshTokeMetadata.getClientId());
-		tokenStore.addAccessToken(accessToken, refreshTokeMetadata.getUserInfo(), refreshTokeMetadata.getClientId(), refreshTokeMetadata.getRefreshToken());
-		RefreshToken refreshToken = new RefreshToken();
-		tokenStore.addRefreshToken(refreshToken,  refreshTokeMetadata.getUserInfo(), refreshTokeMetadata.getClientId(), refreshTokeMetadata.getLoginSession());
-
 		ServletUtils.applyHTTPResponse(
                 new AccessTokenResponse(new Tokens(accessToken, refreshToken)).toHTTPResponse(),
                 servletResponse);

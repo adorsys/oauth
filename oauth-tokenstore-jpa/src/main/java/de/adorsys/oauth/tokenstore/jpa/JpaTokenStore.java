@@ -60,7 +60,7 @@ public class JpaTokenStore implements TokenStore {
         TokenEntity refreshTokenEntity = entityManager.find(TokenEntity.class, refreshToken.getValue());
         if (refreshTokenEntity != null) {
             return new RefreshTokenAndMetadata(refreshTokenEntity.asRefreshToken(), refreshTokenEntity.getUserInfo(),
-                    refreshTokenEntity.getClientId(), refreshTokenEntity.getLoginSession());
+                    refreshTokenEntity.getClientId(), refreshTokenEntity.getLoginSessionToken());
         }
 
         return null;
@@ -85,7 +85,9 @@ public class JpaTokenStore implements TokenStore {
 
         if (refreshToken != null) {
             TokenEntity refreshTokenEntity = entityManager.find(TokenEntity.class, refreshToken.getValue());
+            assert refreshTokenEntity != null : "existing refresh token is expected if given as argument";
             tokenEntity.setRefreshToken(refreshTokenEntity);
+            tokenEntity.setLoginSession(refreshTokenEntity.getLoginSession());
         }
 
         entityManager.persist(tokenEntity);
@@ -166,19 +168,19 @@ public class JpaTokenStore implements TokenStore {
 
     @Override
     public void removeLoginSession(LoginSessionToken sessionId) {
-        LoginSessionEntity loginSessionEntity = entityManager.find(LoginSessionEntity.class, sessionId.getValue());
-        if (loginSessionEntity !=  null) {
-            entityManager.remove(loginSessionEntity);
-        } else {
-            LOG.debug("Keine LoginSession unter der ID {} gefunden.", sessionId.getValue());
-        }
+        entityManager.createNamedQuery(LoginSessionEntity.DELETE_LOGIN_SESSION).setParameter("id", sessionId.getValue()).executeUpdate();
     }
 
     @Override
     public void remove(LoginSessionToken loginSessionToken) {
-        Query query = entityManager.createNamedQuery(TokenEntity.DELETE_BY_LOGINSESSION);
-        query.setParameter("loginSession", loginSessionToken.getValue());
-        query.executeUpdate();
+        Query queryDeleteATokens = entityManager.createNamedQuery(TokenEntity.DELETE_ACCESS_TOKEN_BY_LOGINSESSION);
+        queryDeleteATokens.setParameter("loginSession", loginSessionToken.getValue());
+        int deletedAccessTokens = queryDeleteATokens.executeUpdate();
+        LOG.debug("delete {} access tokens for loginsession", deletedAccessTokens);
+        Query queryDeleteRTokens = entityManager.createNamedQuery(TokenEntity.DELETE_REFRESH_TOKEN_BY_LOGINSESSION);
+        queryDeleteRTokens.setParameter("loginSession", loginSessionToken.getValue());
+        int deletedRefreshTokens = queryDeleteRTokens.executeUpdate();
+        LOG.debug("delete {} refresh tokens for loginsession", deletedRefreshTokens);
     }
 
     @Override
