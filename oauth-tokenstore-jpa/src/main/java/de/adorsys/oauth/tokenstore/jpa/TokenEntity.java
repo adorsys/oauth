@@ -183,8 +183,18 @@ public class TokenEntity {
     public ClientID getClientId() {
         return new ClientID(clientId);
     }
+    
 
-    public LoginSessionToken getLoginSession() {
+    public void setLoginSession(String loginSession) {
+        this.loginSession = loginSession;
+    }
+    
+
+    public String getLoginSession() {
+        return loginSession;
+    }
+
+    public LoginSessionToken getLoginSessionToken() {
         return loginSession == null ? null : new LoginSessionToken(loginSession);
     }
 }

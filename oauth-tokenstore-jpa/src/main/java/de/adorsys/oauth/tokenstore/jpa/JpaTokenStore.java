@@ -59,7 +59,7 @@ public class JpaTokenStore implements TokenStore {
         TokenEntity refreshTokenEntity = entityManager.find(TokenEntity.class, refreshToken.getValue());
         if (refreshTokenEntity != null) {
             return new RefreshTokenAndMetadata(refreshTokenEntity.asRefreshToken(), refreshTokenEntity.getUserInfo(),
-                    refreshTokenEntity.getClientId(), refreshTokenEntity.getLoginSession());
+                    refreshTokenEntity.getClientId(), refreshTokenEntity.getLoginSessionToken());
         }
 
         return null;
@@ -84,7 +84,9 @@ public class JpaTokenStore implements TokenStore {
 
         if (refreshToken != null) {
             TokenEntity refreshTokenEntity = entityManager.find(TokenEntity.class, refreshToken.getValue());
+            assert refreshTokenEntity != null : "existing refresh token is expected if given as argument";
             tokenEntity.setRefreshToken(refreshTokenEntity);
+            tokenEntity.setLoginSession(refreshTokenEntity.getLoginSession());
         }
 
         entityManager.persist(tokenEntity);
@@ -172,10 +174,12 @@ public class JpaTokenStore implements TokenStore {
     public void remove(LoginSessionToken loginSessionToken) {
         Query queryDeleteATokens = entityManager.createNamedQuery(TokenEntity.DELETE_ACCESS_TOKEN_BY_LOGINSESSION);
         queryDeleteATokens.setParameter("loginSession", loginSessionToken.getValue());
-        queryDeleteATokens.executeUpdate();
+        int deletedAccessTokens = queryDeleteATokens.executeUpdate();
+        LOG.debug("delete {} access tokens for loginsession", deletedAccessTokens);
         Query queryDeleteRTokens = entityManager.createNamedQuery(TokenEntity.DELETE_REFRESH_TOKEN_BY_LOGINSESSION);
         queryDeleteRTokens.setParameter("loginSession", loginSessionToken.getValue());
-        queryDeleteRTokens.executeUpdate();
+        int deletedRefreshTokens = queryDeleteRTokens.executeUpdate();
+        LOG.debug("delete {} refresh tokens for loginsession", deletedRefreshTokens);
     }
 
     @Override
