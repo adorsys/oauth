@@ -78,7 +78,7 @@ public class UserInfoResolver {
         try {
             URI userInfoRequest = new URI(String.format("%s?id=%s", userInfoEndpoint.toString(), accessToken.getValue()));
             HttpGet httpGet = new HttpGet(userInfoRequest);
-
+            LOG.debug("load userinfo from {} ", userInfoRequest);
             httpGet.setHeader("Authorization", new BearerAccessToken(accessToken.getValue()).toAuthorizationHeader());
 
             HttpCacheContext context = HttpCacheContext.create();
