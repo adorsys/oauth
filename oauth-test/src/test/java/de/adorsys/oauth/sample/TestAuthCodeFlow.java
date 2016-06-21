@@ -89,8 +89,8 @@ public class TestAuthCodeFlow {
         response = given()
         		.log().ifValidationFails()
                 .redirects().follow(false)
-                .formParam("j_username", "jduke")
-                .formParam("j_password", "1234")
+                .formParam("j_username", "wilduser")
+                .formParam("j_password", "1234?")
                 .when()
                 .urlEncodingEnabled(false)
                 .post(location)
@@ -135,7 +135,7 @@ public class TestAuthCodeFlow {
 
         System.out.printf("accessToken %s refreshToken %s %n", accessToken, refreshToken);
 
-        SampleRequest.verify(accessToken);
+        SampleRequest.verifyWilduser(accessToken);
     }
 
     @Test @RunAsClient

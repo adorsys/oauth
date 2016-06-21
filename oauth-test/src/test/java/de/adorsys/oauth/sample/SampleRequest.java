@@ -17,6 +17,10 @@ public class SampleRequest {
     public static void verify(String accessToken) {
         verify(accessToken, "Hello from jduke [ user admin ]");
     }
+    
+    public static void verifyWilduser(String accessToken) {
+        verify(accessToken, "Hello from wilduser [ user admin ]");
+    }
 
     public static void verify(String accessToken, String expectedBody) {
         given()
