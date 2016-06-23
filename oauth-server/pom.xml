@@ -173,6 +173,8 @@
 									</artifactItems>
 									<stripVersion>true</stripVersion>
 									<outputDirectory>../oauth-test/target/wildfly-8.2.1.Final/standalone/deployments/idp.war/WEB-INF/lib</outputDirectory>
+									<overWriteReleases>true</overWriteReleases>
+									<overWriteIfNewer>true</overWriteIfNewer>
 								</configuration>
 							</execution>
 						</executions>
