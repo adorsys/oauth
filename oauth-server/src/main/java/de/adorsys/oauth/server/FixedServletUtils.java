@@ -26,6 +26,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -180,8 +181,9 @@ public class FixedServletUtils {
 				for (Entry<String, String[]> entry : parameterMap.entrySet()) {
 					String key = entry.getKey();
 					String[] value = entry.getValue();
-					if (value.length > 0) {
-						builder = builder.append(key).append('=').append(value[0]).append('&');
+					if (value.length > 0 && value[0] != null) {
+						String encoded = URLEncoder.encode(value[0], "UTF-8");
+						builder = builder.append(key).append('=').append(encoded).append('&');
 					}
 				}
 				String queryString = StringUtils.substringBeforeLast(builder.toString(), "&");
