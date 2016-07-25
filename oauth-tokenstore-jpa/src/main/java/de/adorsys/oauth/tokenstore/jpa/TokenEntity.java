@@ -52,13 +52,17 @@ import java.util.Date;
 @Table(name = "TOKEN_ENTITY")
 @NamedQueries({
     @NamedQuery(name = TokenEntity.DELETE_ACCESS_TOKEN_BY_LOGINSESSION, query = "delete from TokenEntity t where t.loginSession = :loginSession and t.refreshToken is not null"),
-    @NamedQuery(name = TokenEntity.DELETE_REFRESH_TOKEN_BY_LOGINSESSION, query = "delete from TokenEntity t where t.loginSession = :loginSession and t.refreshToken is null")
+    @NamedQuery(name = TokenEntity.DELETE_REFRESH_TOKEN_BY_LOGINSESSION, query = "delete from TokenEntity t where t.loginSession = :loginSession and t.refreshToken is null"),
+    @NamedQuery(name = TokenEntity.DELETE_REFRESH_TOKEN_BY_PARENT_ID, query = "delete from TokenEntity t where t.refreshToken is not null and t.refreshToken.id = :id"),
+    @NamedQuery(name = TokenEntity.DELETE_TOKEN_BY_ID, query = "delete from TokenEntity t where t.id = :id")
 })
 @SuppressWarnings({"FieldCanBeLocal", "unused"})
 public class TokenEntity {
 
     static final String DELETE_ACCESS_TOKEN_BY_LOGINSESSION = "DELETE_ACCESS_TOKEN_BY_LOGINSESSION";
     static final String DELETE_REFRESH_TOKEN_BY_LOGINSESSION = "DELETE_REFRESH_TOKEN_BY_LOGINSESSION";
+    static final String DELETE_TOKEN_BY_ID = "DELETE_TOKEN_BY_ID";
+    static final String DELETE_REFRESH_TOKEN_BY_PARENT_ID = "DELETE_REFRESH_TOKEN_BY_PARENT_ID";
 
     @Id
     @Column(name = "ID")
