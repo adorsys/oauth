@@ -96,17 +96,26 @@ public class JpaTokenStore implements TokenStore {
     @Override
     public void remove(String id, ClientID clientId) {
         TokenEntity tokenEntity = entityManager.find(TokenEntity.class, id);
-
         if (tokenEntity == null) {
             LOG.warn("Attempt to delete not existing token: " + id);
             return;
         }
 
+        entityManager.detach(tokenEntity);
         if (clientId != null && !clientId.equals(tokenEntity.getClientId())) {
             LOG.warn("clientIds are different: " + clientId + " vs. " + tokenEntity.getClientId());
         }
 
-        entityManager.remove(tokenEntity);
+        // delete the refresh tokens for this token
+        Query queryRefreshToken = entityManager.createNamedQuery(TokenEntity.DELETE_REFRESH_TOKEN_BY_PARENT_ID);
+        queryRefreshToken.setParameter("id", id);
+        int updateCountRefreshToken = queryRefreshToken.executeUpdate();
+        LOG.debug("Removed Refresh-Tokens for parent id {}, count {}", id, updateCountRefreshToken);
+
+        Query q = entityManager.createNamedQuery(TokenEntity.DELETE_TOKEN_BY_ID);
+        q.setParameter("id", id);
+        int updateCount = q.executeUpdate();
+        LOG.debug("Remove Token {}, Count {}", id, updateCount);
     }
 
     @Override
