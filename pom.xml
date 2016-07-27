@@ -28,8 +28,8 @@
   <url>https://github.com/adorsys/oauth</url>
 
   <properties>
-    <maven.compiler.source>1.7</maven.compiler.source>
-    <maven.compiler.target>1.7</maven.compiler.target>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
     <maven.build.timestamp.format>dd.MM.yyyy-HH:mm:ss</maven.build.timestamp.format>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <version.oauth2-oidc-sdk>5.1.1</version.oauth2-oidc-sdk>
@@ -251,8 +251,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.1</version>
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <source>1.8</source>
+          <target>1.8</target>
           <compilerArgument>-proc:none</compilerArgument>
         </configuration>
       </plugin>
