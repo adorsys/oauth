@@ -78,9 +78,6 @@
   <profiles>
     <profile>
       <id>jbossas-embedded</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
       <properties>
         <jboss.home>target/jboss-eap-${version.jboss.as}</jboss.home>
       </properties>
@@ -98,7 +95,7 @@
         </dependency>
         <dependency>
           <groupId>org.jboss.as</groupId>
-          <artifactId>jboss-eap</artifactId>
+          <artifactId>jboss-eaps</artifactId>
           <version>${version.jboss.as}</version>
           <type>zip</type>
           <scope>test</scope>
