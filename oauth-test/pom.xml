@@ -268,13 +268,13 @@
           <artifactId>arquillian-protocol-servlet</artifactId>
           <scope>test</scope>
         </dependency>
-        <dependency>
+        <!--dependency>
           <groupId>org.jboss.as</groupId>
           <artifactId>jboss-eap</artifactId>
           <version>${version.jboss.as}</version>
           <type>zip</type>
           <scope>test</scope>
-        </dependency>
+        </dependency-->
         <dependency>
           <groupId>${project.groupId}</groupId>
           <artifactId>oauth-client-jaas</artifactId>
