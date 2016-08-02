@@ -169,7 +169,6 @@ public class AuthResource extends HttpServlet {
         LOG.debug("location {}", response.getHeader("location"));
 
         ServletUtils.applyHTTPResponse(response, resp);
-        return;
 	}
 
     private URI getCleanUrl(URI redirectionURI) {

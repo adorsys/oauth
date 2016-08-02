@@ -183,7 +183,7 @@ public class FixedServletUtils {
 					String[] value = entry.getValue();
 					if (value.length > 0 && value[0] != null) {
 						String encoded = URLEncoder.encode(value[0], "UTF-8");
-						builder = builder.append(key).append('=').append(value[0]).append('&');
+						builder = builder.append(key).append('=').append(encoded).append('&');
 					}
 				}
 				String queryString = StringUtils.substringBeforeLast(builder.toString(), "&");
