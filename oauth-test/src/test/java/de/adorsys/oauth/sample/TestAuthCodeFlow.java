@@ -341,4 +341,84 @@ public class TestAuthCodeFlow {
 
         return location.substring(location.indexOf("?") + 6);
     }
+
+
+    @Test @RunAsClient
+    public void testAuthCodeWithQueryParams() throws Exception {
+
+        ExtractableResponse<Response> response = given()
+                .redirects().follow(false)
+                .when()
+                .get(SampleRequest.SAMPLE_URL + "?ort=Erlangen&strasse=Unter+den+Palmen+3&vorname=Maximilian&context=kundenwelt&nachname=Mustermann&land=DE&plz=91056")
+                .then()
+                .statusCode(302)
+                .header("Location", Matchers.containsString("oauth/api/auth"))
+                .extract();
+
+
+        // redirect zum IDP
+        String location = response.header("Location");
+
+        given()
+                .when()
+                .get(location)
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("Hello, please log in"))
+        ;
+
+
+        response = given()
+                .log().ifValidationFails()
+                .redirects().follow(false)
+                .formParam("j_username", "wilduser")
+                .formParam("j_password", "1234?")
+                .when()
+                .urlEncodingEnabled(false)
+                .post(location)
+                .then().statusCode(302)
+                .extract()
+
+        ;
+
+        location = response.header("Location");
+
+        URL idpUrl = new URL(location);
+
+        assertTrue(location.contains("code="));
+        int index = location.indexOf("&code=");
+
+        String authCode = location.substring(index + 6);
+        String originalUrl = location.substring(0, index);
+
+        response = given()
+                .log().all()
+                .authentication().basic("sample", "password")
+                .contentType("application/x-www-form-urlencoded")
+                .formParam("grant_type", "authorization_code")
+                .formParam("code", authCode)
+                .formParam("redirect_uri", originalUrl)
+                .formParam("client_id", "sample")
+                .when()
+                .post(String.format("http://%s:%d/oauth/api/token", idpUrl.getHost(), idpUrl.getPort()))
+                .then()
+                .statusCode(200)
+                .body("access_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("refresh_token", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("expires_in", Matchers.not(Matchers.isEmptyOrNullString()))
+                .body("token_type", Matchers.is("Bearer"))
+                .header("Pragma", "no-cache")
+                .header("Cache-Control", "no-store")
+                .extract()
+        ;
+
+
+        String accessToken = response.jsonPath().get("access_token");
+        String refreshToken = response.jsonPath().get("refresh_token");
+
+        System.out.printf("accessToken %s refreshToken %s %n", accessToken, refreshToken);
+
+        SampleRequest.verifyWilduser(accessToken);
+    }
+
 }
