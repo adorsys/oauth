@@ -124,4 +124,37 @@ public class TestImplicitFlow {
 		Assert.assertEquals(generatedState, state);
         SampleRequest.verify(accessToken);
     }
+
+    @Test @RunAsClient
+    public void testImplicitWithReservedCharacters() throws Exception {
+        String generatedState = UUID.randomUUID().toString();
+        ExtractableResponse<Response> response = given()
+                .redirects().follow(false)
+                .queryParam("response_type", "token")
+                .queryParam("client_id", "sample")
+                .queryParam("state", generatedState)
+                .queryParam("redirect_uri", SampleRequest.SAMPLE_URL)
+                .formParam("j_username", "trailingPercent")
+                .formParam("j_password", "foo%")
+                .when()
+                .post(SampleRequest.AUTH_ENDPOINT)
+                .then()
+                .statusCode(302)
+                .extract();
+        String location = response.header("Location");
+        System.out.println("\nredirect " + location);
+
+        //link contains login_session param
+        Assert.assertTrue(location.indexOf("login_session") > -1);
+
+        int startIndexAccessToken = location.indexOf("access_token") + 13;
+        int endIndexAccessToken = location.indexOf("&", startIndexAccessToken);
+        String accessToken = location.substring(startIndexAccessToken, endIndexAccessToken == -1 ? location.length() : endIndexAccessToken);
+
+        int beginIndex = location.indexOf("state") + 6;
+        String state = location.substring(beginIndex, beginIndex + generatedState.length());
+        System.out.println("\noauth token " + accessToken);
+        Assert.assertEquals(generatedState, state);
+        SampleRequest.verifyUser(accessToken, "trailingPercent");
+    }
 }
