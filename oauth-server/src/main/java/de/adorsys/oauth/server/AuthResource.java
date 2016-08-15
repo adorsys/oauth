@@ -15,38 +15,26 @@
  */
 package de.adorsys.oauth.server;
 
-import com.nimbusds.oauth2.sdk.AuthorizationCode;
-import com.nimbusds.oauth2.sdk.AuthorizationErrorResponse;
-import com.nimbusds.oauth2.sdk.AuthorizationRequest;
-import com.nimbusds.oauth2.sdk.AuthorizationSuccessResponse;
-import com.nimbusds.oauth2.sdk.OAuth2Error;
-import com.nimbusds.oauth2.sdk.ParseException;
-import com.nimbusds.oauth2.sdk.TokenErrorResponse;
+import com.nimbusds.oauth2.sdk.*;
 import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.http.ServletUtils;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,7 +59,7 @@ public class AuthResource extends HttpServlet {
     private TokenStore tokenStore;
 
     private long tokenLifetime;
-    
+
     @Override
     public void init(ServletConfig config) throws ServletException {
     	try {
@@ -79,10 +67,10 @@ public class AuthResource extends HttpServlet {
     	} catch (Exception e) {
     		tokenLifetime = 8 * 3600;
     	}
-    	
+
     	LOG.info("token lifetime {}", tokenLifetime);
     }
-    
+
     @Override
     protected void doPost(HttpServletRequest servletRequest, HttpServletResponse resp) throws ServletException, IOException {
 
@@ -99,7 +87,7 @@ public class AuthResource extends HttpServlet {
 			return;
 		}
 
-        
+
         URI redirectionURI = request.getRedirectionURI();
         if (redirectionURI == null) {
         	ServletUtils.applyHTTPResponse(new AuthorizationErrorResponse(request.getEndpointURI(), OAuth2Error.INVALID_REQUEST, request.getState(), request.getResponseMode()).toHTTPResponse(), resp);
@@ -147,9 +135,9 @@ public class AuthResource extends HttpServlet {
         }
 
         LOG.debug(userInfo.toJSONObject().toJSONString());
-        
+
         BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
-		
+
 		HTTPResponse response;
 		if (request.getResponseType().impliesCodeFlow()) {
         	AuthorizationCode authCode = new AuthorizationCode();
@@ -161,7 +149,7 @@ public class AuthResource extends HttpServlet {
         } else {
             LOG.debug("impliesTokenFlow {}", accessToken.toJSONString());
             tokenStore.addAccessToken(accessToken, userInfo, request.getClientID(), null);
-            
+
             URI cleanUrl = getCleanUrl(redirectionURI);
             response = new LoginSessionAuthorizationSuccessResponse(cleanUrl, null, accessToken, request.getState(), request.getResponseMode(), loginSession, redirectionURI.getFragment()).toHTTPResponse();
         }
@@ -195,7 +183,7 @@ public class AuthResource extends HttpServlet {
         if (isNotBlank(servletRequest.getParameter(CLIENT_ID_STR))) {
 			return AuthorizationRequest.parse(extractURI(servletRequest), requestParameters(servletRequest));
     	}
-    	
+
     	if ((contains(servletRequest.getQueryString(), CLIENT_ID_STR))) {
     		return AuthorizationRequest.parse(extractURI(servletRequest),servletRequest.getQueryString());
     	}
@@ -211,7 +199,7 @@ public class AuthResource extends HttpServlet {
     			// Noop
     		}
     	}
-        
+
         throw  new ParseException(String.format("unable to resolve AuthorizationRequest from %s", servletRequest.getRequestURI()));
     }
 
@@ -230,11 +218,7 @@ public class AuthResource extends HttpServlet {
 		while (parameterNames.hasMoreElements()) {
 			String param = parameterNames.nextElement();
 			String value = servletRequest.getParameter(param);
-            try {
-                params.put(param, URLDecoder.decode(value, "UTF-8"));
-            } catch (UnsupportedEncodingException e) {
-                params.put(param, value);
-            }
+            params.put(param, value);
         }
 		return params;
 	}
