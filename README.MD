@@ -17,3 +17,10 @@ $ mvn install:install-file -Dfile=jboss-eap-6.4.0.zip -DgroupId=org.jboss.as -Da
 # run tests with profile jbossas-embedded
 $ mvn clean install -P jbossas-embedded
 ```
+
+# Release
+
+```
+$ mvn release:prepare -Pwildfly
+$ mvn release:perform -Darguments=-Pwildfly
+```
