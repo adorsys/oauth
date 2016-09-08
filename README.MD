@@ -24,3 +24,4 @@ $ mvn clean install -P jbossas-embedded
 $ mvn release:prepare -Pwildfly
 $ mvn release:perform -Darguments=-Pwildfly
 ```
+Afterwards, log in to [Sonatype nexus](https://oss.sonatype.org/) and click on "Close" and then "Release" for the staging repository ([as described here](http://central.sonatype.org/pages/releasing-the-deployment.html)).
