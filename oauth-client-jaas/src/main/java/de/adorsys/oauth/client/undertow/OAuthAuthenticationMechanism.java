@@ -40,7 +40,6 @@ public class OAuthAuthenticationMechanism implements AuthenticationMechanism {
     private UserInfoResolver userInfoResolver;
     private boolean supportAuthCode;
     private boolean supportGuest;
-    private boolean treatInvalidTokenAsGuest;
     private boolean supportHttpSession;
     private String mechanismName;
 
@@ -52,7 +51,6 @@ public class OAuthAuthenticationMechanism implements AuthenticationMechanism {
         supportAuthCode = extract(properties, "supportAuthCode", true);
         supportGuest = extract(properties, "supportGuest", false);
         supportHttpSession = extract(properties, "supportHttpSession", false);
-        treatInvalidTokenAsGuest = extract(properties, "treatInvalidTokenAsGuest", false);
 
         LOG.info("use {} {}", oauthProtocol, userInfoResolver);
     }
@@ -79,19 +77,16 @@ public class OAuthAuthenticationMechanism implements AuthenticationMechanism {
         // 1. check for token
         AccessToken accessToken = oauthProtocol.resolveAccessToken(request);
 
-        // 1.1 no accessToken and guest allowed
+        // 1.1 kein accessToken and guest allowed
         if (accessToken == null && supportGuest) {
-            return authenticateAsGuest(securityContext);
+            Account account = securityContext.getIdentityManager().verify("guest", new PasswordCredential("NONE".toCharArray()));
+            securityContext.authenticationComplete(account, mechanismName, false);
+            return AuthenticationMechanismOutcome.AUTHENTICATED;
         }
 
         // try to authenticate with accessToken
         if (authenticate(securityContext, accessToken, request, response)) {
             return AuthenticationMechanismOutcome.AUTHENTICATED;
-        }
-
-        // Authenticate as guest if invalid token supplied
-        if(treatInvalidTokenAsGuest) {
-            return authenticateAsGuest(securityContext);
         }
 
         // return 401 if AuthorizationCodeFlow disallowed
@@ -114,12 +109,6 @@ public class OAuthAuthenticationMechanism implements AuthenticationMechanism {
         oauthProtocol.doAuthorizationRequest(response, requestURI);
 
         return AuthenticationMechanismOutcome.NOT_ATTEMPTED;
-    }
-
-    private AuthenticationMechanismOutcome authenticateAsGuest(SecurityContext securityContext) {
-        Account account = securityContext.getIdentityManager().verify("guest", new PasswordCredential("NONE".toCharArray()));
-        securityContext.authenticationComplete(account, mechanismName, false);
-        return AuthenticationMechanismOutcome.AUTHENTICATED;
     }
 
     /**
