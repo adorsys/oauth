@@ -7,7 +7,7 @@ install:
   - mvn --settings .travis/settings.xml install -DskipTests -Dmaven.javadoc.skip=true -B -V
 
 script:
-  - mvn --settings .travis/settings.xml package -DskipTests -B -V -P wildfly
+  - mvn --settings .travis/settings.xml package -B -V -P wildfly
 
 #before_install:
 #  - echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import

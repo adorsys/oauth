@@ -328,7 +328,7 @@
             </security-domains>
         </subsystem>
         <subsystem xmlns="urn:jboss:domain:transactions:2.0">
-            <core-environment node-identifier="${jboss.server.name}-1">
+            <core-environment node-identifier="localhost-1">
                 <process-id>
                     <uuid/>
                 </process-id>
