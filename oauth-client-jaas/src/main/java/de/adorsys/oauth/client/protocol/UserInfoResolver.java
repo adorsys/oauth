@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -41,8 +42,12 @@ public class UserInfoResolver {
             throw new IllegalStateException("Invalid userInfoEndpoint ");
         }
         userInfoResolver.setUserInfoEndpoint(userInfoEndpoint);
+
         Properties properties = new Properties();
-        properties.putAll(parameters);
+        parameters
+                .entrySet().stream()
+                .filter(p -> p.getValue() != null)
+                .forEach(p -> properties.put(p.getKey(), p.getValue()) );
         return userInfoResolver.initialize(properties);
     }
 
