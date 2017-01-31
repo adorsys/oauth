@@ -1,5 +1,11 @@
 package de.adorsys.oauth.server;
 
+import io.undertow.security.api.AuthenticationMechanism;
+import io.undertow.security.api.SecurityContext;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.servlet.handlers.ServletRequestContext;
+import io.undertow.util.AttachmentKey;
+
 import com.nimbusds.oauth2.sdk.AuthorizationRequest;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
@@ -21,12 +27,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import io.undertow.security.api.AuthenticationMechanism;
-import io.undertow.security.api.SecurityContext;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.servlet.handlers.ServletRequestContext;
-import io.undertow.util.AttachmentKey;
 
 /**
  * DelegateAuthenticationMechanism
@@ -61,7 +61,6 @@ public class DelegateAuthenticationMechanism implements AuthenticationMechanism,
         authenticatioMatchers.add(new TokenEndpointMatcher());
         authenticatioMatchers.add(new RememberMeMatcher());
         authenticatioMatchers.add(new FormAuthenticationMatcher());
-        authenticatioMatchers.add(new BasicAuthenticatorMatcher());
         authenticatioMatchers.add(new BearerTokenMatcher());
 
         for (AuthenticatorMatcher authenticatioMatcher : authenticatioMatchers) {
