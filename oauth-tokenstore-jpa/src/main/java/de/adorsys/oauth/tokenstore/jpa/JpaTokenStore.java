@@ -15,18 +15,6 @@
  */
 package de.adorsys.oauth.tokenstore.jpa;
 
-import java.net.URI;
-
-import javax.ejb.Stateless;
-import javax.persistence.Cache;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
-
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
@@ -38,6 +26,17 @@ import de.adorsys.oauth.server.AuthCodeAndMetadata;
 import de.adorsys.oauth.server.LoginSessionToken;
 import de.adorsys.oauth.server.RefreshTokenAndMetadata;
 import de.adorsys.oauth.server.TokenStore;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.ejb.Stateless;
+import javax.persistence.Cache;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
+
+import java.net.URI;
 
 /**
  * JpaTokenStore
@@ -77,6 +76,12 @@ public class JpaTokenStore implements TokenStore {
     public void addRefreshToken(RefreshToken token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId) {
         TokenEntity tokenEntity = new TokenEntity(token, userInfo, clientId, sessionId);
         entityManager.persist(tokenEntity);
+    }
+
+    @Override
+    public void addRefreshToken(RefreshToken token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId, long refreshLifeTime) {
+        // refreshLifeTime wird aktuell ignoriert
+        addRefreshToken(token, userInfo, clientId, sessionId);
     }
 
     @Override

@@ -33,20 +33,14 @@ import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -69,13 +63,16 @@ public class TokenResource extends HttpServlet {
     private TokenStore tokenStore;
 
     private long tokenLifetime;
+    private long refreshTokenLifetime;
     
     @Override
     public void init(ServletConfig config) throws ServletException {
 	   try {
            tokenLifetime = Long.valueOf(config.getServletContext().getInitParameter("lifetime"));
+           refreshTokenLifetime = Long.valueOf(config.getServletContext().getInitParameter("refreshlifetime"));
        } catch (Exception e) {
            tokenLifetime = 8 * 3600;
+           refreshTokenLifetime = 0L;
        }
 
        LOG.info("token lifetime {}", tokenLifetime);
@@ -131,7 +128,7 @@ public class TokenResource extends HttpServlet {
             return;
     	}
     	RefreshToken refreshToken = new RefreshToken();
-    	tokenStore.addRefreshToken(refreshToken,  refreshTokeMetadata.getUserInfo(), refreshTokeMetadata.getClientId(), refreshTokeMetadata.getLoginSession());
+    	tokenStore.addRefreshToken(refreshToken,  refreshTokeMetadata.getUserInfo(), refreshTokeMetadata.getClientId(), refreshTokeMetadata.getLoginSession(), refreshTokenLifetime);
     	BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
     	tokenStore.addAccessToken(accessToken, refreshTokeMetadata.getUserInfo(), refreshTokeMetadata.getClientId(), refreshToken);
     	
@@ -189,7 +186,7 @@ public class TokenResource extends HttpServlet {
 
         RefreshToken refreshToken = new RefreshToken();
         LOG.debug("request.getClientAuthentication() {}", request.getClientAuthentication());
-		tokenStore.addRefreshToken(refreshToken, userInfo, request.getClientAuthentication().getClientID(), null);
+		tokenStore.addRefreshToken(refreshToken, userInfo, request.getClientAuthentication().getClientID(), null, refreshTokenLifetime);
 
         BearerAccessToken accessToken = new BearerAccessToken(tokenLifetime, request.getScope());
 

@@ -93,6 +93,14 @@ public class MdbTokenStore implements TokenStore {
         collection.insertOne(document);
 	}
 
+    @Override
+    public void addRefreshToken(RefreshToken token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId, long refreshLifeTime) {
+        TokenDocument<RefreshToken> tokenDocument = new TokenDocument<RefreshToken>(token, new Date(), clientId, sessionId,
+                userInfo, refreshLifeTime);
+        Document document = tokenDocument.asDocument();
+        collection.insertOne(document);
+    }
+
 	@Override
 	public void addAccessToken(BearerAccessToken token, UserInfo userInfo, ClientID clientId, RefreshToken refreshToken) {
 		TokenDocument<BearerAccessToken> tokenDocument = new TokenDocument<BearerAccessToken>(token, new Date(), clientId, null, userInfo);

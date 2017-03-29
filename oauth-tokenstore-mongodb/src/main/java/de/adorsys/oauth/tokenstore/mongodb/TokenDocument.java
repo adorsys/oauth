@@ -15,25 +15,20 @@
  */
 package de.adorsys.oauth.tokenstore.mongodb;
 
-import org.bson.Document;
 import net.minidev.json.JSONObject;
 
-import com.mongodb.util.JSON;
-import com.nimbusds.oauth2.sdk.AuthorizationCode;
-import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
 import com.nimbusds.oauth2.sdk.token.Token;
-import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 import de.adorsys.oauth.server.LoginSessionToken;
 
-import java.util.Calendar;
+import org.bson.Document;
+
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -64,13 +59,17 @@ public class TokenDocument<T extends Token> {
     private String refreshTokenRef;
     
     public TokenDocument(T token, Date created, ClientID clientId, LoginSessionToken sessionId, UserInfo userInfo) {
-    	if (token instanceof BearerAccessToken) {
-    		this.type = TokenType.ACCESS;
-    	} else if (token instanceof RefreshToken) {
-    		this.type = TokenType.REFRESH;
-    	} else {
-    		throw new IllegalArgumentException("unknow token type " + token.getClass().getName());
-    	}
+        this(token, created, clientId, sessionId, userInfo, 0L);
+    }
+
+    public TokenDocument(T token, Date created, ClientID clientId, LoginSessionToken sessionId, UserInfo userInfo, long refreshLifeTime) {
+        if (token instanceof BearerAccessToken) {
+            this.type = TokenType.ACCESS;
+        } else if (token instanceof RefreshToken) {
+            this.type = TokenType.REFRESH;
+        } else {
+            throw new IllegalArgumentException("unknow token type " + token.getClass().getName());
+        }
         this.token = token;
         this.created = created;
         this.sessionId = sessionId;
@@ -79,13 +78,17 @@ public class TokenDocument<T extends Token> {
         if (token instanceof AccessToken && 0 != ((AccessToken) token).getLifetime()) {
             expires = new Date(created.getTime() + ((AccessToken) token).getLifetime() * 1000);
         } else {
-        	expires = new Date(Long.MAX_VALUE);
+            if (refreshLifeTime == 0L) {
+                expires = new Date(Long.MAX_VALUE);
+            } else {
+                expires = new Date(created.getTime() + refreshLifeTime * 1000);
+            }
         }
 
         if (userInfo != null) {
             this.userInfo = userInfo.toJSONObject();
         } else {
-        	this.userInfo = null;
+            this.userInfo = null;
         }
     }
 
