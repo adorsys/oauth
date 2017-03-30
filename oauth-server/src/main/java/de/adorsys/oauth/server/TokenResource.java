@@ -63,19 +63,20 @@ public class TokenResource extends HttpServlet {
     private TokenStore tokenStore;
 
     private long tokenLifetime;
-    private long refreshTokenLifetime;
+    private int refreshTokenLifetime;
     
     @Override
     public void init(ServletConfig config) throws ServletException {
 	   try {
            tokenLifetime = Long.valueOf(config.getServletContext().getInitParameter("lifetime"));
-           refreshTokenLifetime = Long.valueOf(config.getServletContext().getInitParameter("refreshlifetime"));
+           refreshTokenLifetime = Integer.valueOf(config.getServletContext().getInitParameter("refreshlifetime"));
        } catch (Exception e) {
            tokenLifetime = 8 * 3600;
-           refreshTokenLifetime = 0L;
+           refreshTokenLifetime = 0;
        }
 
        LOG.info("token lifetime {}", tokenLifetime);
+       LOG.info("refresh token lifetime {}", refreshTokenLifetime);
     }
     
     @Override

@@ -15,6 +15,8 @@
  */
 package de.adorsys.oauth.tokenstore.mongodb;
 
+import net.minidev.json.JSONObject;
+
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -42,8 +44,6 @@ import javax.inject.Singleton;
 import java.net.URI;
 import java.util.Date;
 import java.util.Map;
-
-import net.minidev.json.JSONObject;
 
 /**
  * MdbTokenStore
@@ -94,9 +94,8 @@ public class MdbTokenStore implements TokenStore {
 	}
 
     @Override
-    public void addRefreshToken(RefreshToken token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId, long refreshLifeTime) {
-        TokenDocument<RefreshToken> tokenDocument = new TokenDocument<RefreshToken>(token, new Date(), clientId, sessionId,
-                userInfo, refreshLifeTime);
+    public void addRefreshToken(RefreshToken token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId, int refreshTokenLifeTime) {
+        TokenDocument<RefreshToken> tokenDocument = new TokenDocument<RefreshToken>(token, new Date(), clientId, sessionId, userInfo, refreshTokenLifeTime);
         Document document = tokenDocument.asDocument();
         collection.insertOne(document);
     }

@@ -59,10 +59,10 @@ public class TokenDocument<T extends Token> {
     private String refreshTokenRef;
     
     public TokenDocument(T token, Date created, ClientID clientId, LoginSessionToken sessionId, UserInfo userInfo) {
-        this(token, created, clientId, sessionId, userInfo, 0L);
+        this(token, created, clientId, sessionId, userInfo, 0);
     }
 
-    public TokenDocument(T token, Date created, ClientID clientId, LoginSessionToken sessionId, UserInfo userInfo, long refreshLifeTime) {
+    public TokenDocument(T token, Date created, ClientID clientId, LoginSessionToken sessionId, UserInfo userInfo, int refreshTokenLifeTime) {
         if (token instanceof BearerAccessToken) {
             this.type = TokenType.ACCESS;
         } else if (token instanceof RefreshToken) {
@@ -78,10 +78,10 @@ public class TokenDocument<T extends Token> {
         if (token instanceof AccessToken && 0 != ((AccessToken) token).getLifetime()) {
             expires = new Date(created.getTime() + ((AccessToken) token).getLifetime() * 1000);
         } else {
-            if (refreshLifeTime == 0L) {
+            if (refreshTokenLifeTime == 0) {
                 expires = new Date(Long.MAX_VALUE);
             } else {
-                expires = new Date(created.getTime() + refreshLifeTime * 1000);
+                expires = new Date(created.getTime() + refreshTokenLifeTime * 1000);
             }
         }
 
@@ -127,8 +127,13 @@ public class TokenDocument<T extends Token> {
     		BearerAccessToken bearerAccessToken = new BearerAccessToken(document.getString("_id"), tokenLifetime, null);
 			tokenDocument = (TokenDocument<T>) new TokenDocument<BearerAccessToken>(bearerAccessToken, created, clientIdObj, loginSession, userInfoObject);
     	} else if (TokenType.REFRESH.name().equals(type)) {
-    		RefreshToken refreshToken = new RefreshToken(document.getString("_id"));
-			tokenDocument = (TokenDocument<T>) new TokenDocument<RefreshToken>(refreshToken,  created, clientIdObj, loginSession, userInfoObject);
+            int tokenLifetime = 0;
+		    if (document.getDate("expires") != null) {
+                tokenLifetime = (int) (document.getDate("expires").getTime() - created.getTime()) / 1000;
+            }
+            RefreshToken refreshToken = new RefreshToken(document.getString("_id"));
+			tokenDocument = (TokenDocument<T>) new TokenDocument<RefreshToken>(refreshToken,  created, clientIdObj, loginSession,
+                    userInfoObject, tokenLifetime);
     	} else {
     		throw new IllegalArgumentException("unknow token type " + type);
     	}

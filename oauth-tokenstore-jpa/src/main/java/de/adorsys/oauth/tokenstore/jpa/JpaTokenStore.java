@@ -79,9 +79,9 @@ public class JpaTokenStore implements TokenStore {
     }
 
     @Override
-    public void addRefreshToken(RefreshToken token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId, long refreshLifeTime) {
-        // refreshLifeTime wird aktuell ignoriert
-        addRefreshToken(token, userInfo, clientId, sessionId);
+    public void addRefreshToken(RefreshToken token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId, int refreshTokenLifeTime) {
+        TokenEntity tokenEntity = new TokenEntity(token, userInfo, clientId, sessionId, refreshTokenLifeTime);
+        entityManager.persist(tokenEntity);
     }
 
     @Override
