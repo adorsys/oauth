@@ -158,13 +158,14 @@ public class TokenEntity {
     }
     
     public boolean isValid() {
-        
+
         AccessToken accessToken = asAccessToken();
         if (accessToken != null) {
             return expires == null || System.currentTimeMillis() < expires.getTime();
-        } 
-        
-        return asRefreshToken() != null;
+        }
+
+        RefreshToken refreshToken = asRefreshToken();
+        return refreshToken != null && (expires == null || System.currentTimeMillis() < expires.getTime());
     }
 
     @Override
