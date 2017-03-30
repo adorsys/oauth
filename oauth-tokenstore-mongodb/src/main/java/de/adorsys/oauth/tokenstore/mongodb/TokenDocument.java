@@ -68,7 +68,7 @@ public class TokenDocument<T extends Token> {
         } else if (token instanceof RefreshToken) {
             this.type = TokenType.REFRESH;
         } else {
-            throw new IllegalArgumentException("unknow token type " + token.getClass().getName());
+            throw new IllegalArgumentException("Unknow token type " + token.getClass().getName());
         }
         this.token = token;
         this.created = created;
