@@ -15,14 +15,14 @@
  */
 package de.adorsys.oauth.server;
 
-import java.net.URI;
-
 import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
+
+import java.net.URI;
 
 /**
  * TokenStore
@@ -34,6 +34,8 @@ public interface TokenStore {
 	void addAuthCode(AuthorizationCode token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId, URI redirectUri);
 
     void addRefreshToken(RefreshToken token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId);
+
+    void addRefreshToken(RefreshToken token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId, int refreshTokenLifetime);
 
     void addAccessToken(BearerAccessToken token, UserInfo userInfo, ClientID clientId, RefreshToken refreshToken);
     

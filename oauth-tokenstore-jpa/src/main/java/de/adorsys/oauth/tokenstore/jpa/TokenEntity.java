@@ -98,6 +98,10 @@ public class TokenEntity {
     }
 
     public TokenEntity(Token token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId) {
+        this(token, userInfo, clientId, sessionId, 0);
+    }
+
+    public TokenEntity(Token token, UserInfo userInfo, ClientID clientId, LoginSessionToken sessionId, int refreshTokenLifeTime) {
         this.id    = token.getValue();
         this.token = token.toJSONObject().toJSONString();
 
@@ -105,6 +109,14 @@ public class TokenEntity {
             Calendar cal = Calendar.getInstance();
             cal.add(Calendar.SECOND, (int) ((AccessToken) token).getLifetime());
             expires = cal.getTime();
+        }
+
+        if (token instanceof RefreshToken) {
+            if (refreshTokenLifeTime != 0) {
+                Calendar cal = Calendar.getInstance();
+                cal.add(Calendar.MILLISECOND, refreshTokenLifeTime);
+                expires = cal.getTime();
+            }
         }
 
         if (userInfo != null) {
@@ -158,13 +170,14 @@ public class TokenEntity {
     }
     
     public boolean isValid() {
-        
+
         AccessToken accessToken = asAccessToken();
         if (accessToken != null) {
             return expires == null || System.currentTimeMillis() < expires.getTime();
-        } 
-        
-        return asRefreshToken() != null;
+        }
+
+        RefreshToken refreshToken = asRefreshToken();
+        return refreshToken != null && (expires == null || System.currentTimeMillis() < expires.getTime());
     }
 
     @Override

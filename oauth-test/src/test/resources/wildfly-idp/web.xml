@@ -23,10 +23,14 @@
 		<param-name>lifetime</param-name>
 		<param-value>15</param-value>
 	</context-param>
+  <context-param>
+    <param-name>refreshlifetime</param-name>
+    <param-value>15</param-value>
+  </context-param>
 	<context-param>
-        <param-name>checkClientCredentialsOnTokenRevoke</param-name>
-        <param-value>false</param-value>
-    </context-param>
+      <param-name>checkClientCredentialsOnTokenRevoke</param-name>
+      <param-value>false</param-value>
+  </context-param>
 
 	<security-constraint>
 		<web-resource-collection>

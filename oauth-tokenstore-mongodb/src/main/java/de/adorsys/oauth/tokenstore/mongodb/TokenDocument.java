@@ -15,25 +15,20 @@
  */
 package de.adorsys.oauth.tokenstore.mongodb;
 
-import org.bson.Document;
 import net.minidev.json.JSONObject;
 
-import com.mongodb.util.JSON;
-import com.nimbusds.oauth2.sdk.AuthorizationCode;
-import com.nimbusds.oauth2.sdk.ParseException;
 import com.nimbusds.oauth2.sdk.id.ClientID;
 import com.nimbusds.oauth2.sdk.token.AccessToken;
 import com.nimbusds.oauth2.sdk.token.BearerAccessToken;
 import com.nimbusds.oauth2.sdk.token.RefreshToken;
 import com.nimbusds.oauth2.sdk.token.Token;
-import com.nimbusds.oauth2.sdk.util.JSONObjectUtils;
 import com.nimbusds.openid.connect.sdk.claims.UserInfo;
 
 import de.adorsys.oauth.server.LoginSessionToken;
 
-import java.util.Calendar;
+import org.bson.Document;
+
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -64,13 +59,17 @@ public class TokenDocument<T extends Token> {
     private String refreshTokenRef;
     
     public TokenDocument(T token, Date created, ClientID clientId, LoginSessionToken sessionId, UserInfo userInfo) {
-    	if (token instanceof BearerAccessToken) {
-    		this.type = TokenType.ACCESS;
-    	} else if (token instanceof RefreshToken) {
-    		this.type = TokenType.REFRESH;
-    	} else {
-    		throw new IllegalArgumentException("unknow token type " + token.getClass().getName());
-    	}
+        this(token, created, clientId, sessionId, userInfo, 0);
+    }
+
+    public TokenDocument(T token, Date created, ClientID clientId, LoginSessionToken sessionId, UserInfo userInfo, int refreshTokenLifeTime) {
+        if (token instanceof BearerAccessToken) {
+            this.type = TokenType.ACCESS;
+        } else if (token instanceof RefreshToken) {
+            this.type = TokenType.REFRESH;
+        } else {
+            throw new IllegalArgumentException("Unknow token type " + token.getClass().getName());
+        }
         this.token = token;
         this.created = created;
         this.sessionId = sessionId;
@@ -79,13 +78,17 @@ public class TokenDocument<T extends Token> {
         if (token instanceof AccessToken && 0 != ((AccessToken) token).getLifetime()) {
             expires = new Date(created.getTime() + ((AccessToken) token).getLifetime() * 1000);
         } else {
-        	expires = new Date(Long.MAX_VALUE);
+            if (refreshTokenLifeTime == 0) {
+                expires = new Date(Long.MAX_VALUE);
+            } else {
+                expires = new Date(created.getTime() + refreshTokenLifeTime * 1000);
+            }
         }
 
         if (userInfo != null) {
             this.userInfo = userInfo.toJSONObject();
         } else {
-        	this.userInfo = null;
+            this.userInfo = null;
         }
     }
 
@@ -124,8 +127,13 @@ public class TokenDocument<T extends Token> {
     		BearerAccessToken bearerAccessToken = new BearerAccessToken(document.getString("_id"), tokenLifetime, null);
 			tokenDocument = (TokenDocument<T>) new TokenDocument<BearerAccessToken>(bearerAccessToken, created, clientIdObj, loginSession, userInfoObject);
     	} else if (TokenType.REFRESH.name().equals(type)) {
-    		RefreshToken refreshToken = new RefreshToken(document.getString("_id"));
-			tokenDocument = (TokenDocument<T>) new TokenDocument<RefreshToken>(refreshToken,  created, clientIdObj, loginSession, userInfoObject);
+            int tokenLifetime = 0;
+		    if (document.getDate("expires") != null) {
+                tokenLifetime = (int) (document.getDate("expires").getTime() - created.getTime()) / 1000;
+            }
+            RefreshToken refreshToken = new RefreshToken(document.getString("_id"));
+			tokenDocument = (TokenDocument<T>) new TokenDocument<RefreshToken>(refreshToken,  created, clientIdObj, loginSession,
+                    userInfoObject, tokenLifetime);
     	} else {
     		throw new IllegalArgumentException("unknow token type " + type);
     	}
