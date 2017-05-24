@@ -80,7 +80,7 @@ public class MdbTokenStore implements TokenStore {
 				.append("expires", new Date(System.currentTimeMillis() + 60000))
 				.append("userInfo", userInfo.toJSONObject())
 				.append("clientId", clientId.getValue())
-				.append("loginSession", sessionId.getValue())
+				.append("loginSession", sessionId == null ? null : sessionId.getValue())
 				.append("redirectUri", redirectUri.toString());
 		authCodeCollection.insertOne(document);
 	}
