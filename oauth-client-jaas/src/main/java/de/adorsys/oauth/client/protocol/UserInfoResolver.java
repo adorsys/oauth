@@ -89,6 +89,7 @@ public class UserInfoResolver {
                 .setCacheConfig(cacheConfig)
                 .setDefaultRequestConfig(requestConfig)
                 .setMaxConnTotal(config.getMaxTotalConnections())
+                .setMaxConnPerRoute(config.getMaxConnectionsPerRoute())
                 .build();
         return this;
     }
@@ -133,6 +134,8 @@ public class UserInfoResolver {
         private static final int REQUEST_DEFAULT_CONNECTION_REQUEST_TIMEOUT_MS = 3000;
         private static final int REQUEST_DEFAULT_SOCKET_TIMEOUT_MS = 3000;
         private static final int DEFAULT_HTTP_MAX_TOTAL_CONNECTIONS = 50;
+        /** max. Connections per Route - dies ist erstmal der Defaultwert aus CacheConfig */
+        private static final int DEFAULT_HTTP_CONNECTIONS_PER_ROUTE = 2;
 
         private static final String PARAM_MAX_CACHE_ENTRIES = "de.adorsys.oauth.cache.max.entries.number";
         private static final String PARAM_MAX_CACHE_OBJECT_SIZE_BYTES = "de.adorsys.oauth.cache.max.object.size.bytes";
@@ -140,6 +143,7 @@ public class UserInfoResolver {
         private static final String PARAM_REQUEST_DEFAULT_CONNECTION_REQUEST_TIMEOUT_MS = "de.adorsys.oauth.request.connection.request.timeout.ms";
         private static final String PARAM_REQUEST_DEFAULT_SOCKET_TIMEOUT_MS = "de.adorsys.oauth.request.socket.timeout.ms";
         private static final String PARAM_DEFAULT_MAX_TOTAL_CONNECTIONS = "de.adorsys.oauth.http.max.connections.number";
+        private static final String PARAM_DEFAULT_HTTP_CONNECTIONS_PER_ROUTE = "de.adorsys.oauth.http.connections.per.route.number";
 
         private int maxCacheEntries = DEFAULT_MAX_CACHE_ENTRIES;
         private int maxCacheObjectSize = DEFAULT_MAX_CACHE_OBJECT_SIZE_BYTES;
@@ -149,6 +153,7 @@ public class UserInfoResolver {
         private int socketTimeout = REQUEST_DEFAULT_SOCKET_TIMEOUT_MS;
 
         private int maxTotalConnections = DEFAULT_HTTP_MAX_TOTAL_CONNECTIONS;
+        private int maxConnectionsPerRoute = DEFAULT_HTTP_CONNECTIONS_PER_ROUTE;
 
         private Properties parameters;
 
@@ -162,6 +167,7 @@ public class UserInfoResolver {
                 connectionRequestTimeout = parseIntParameter(PARAM_REQUEST_DEFAULT_CONNECTION_REQUEST_TIMEOUT_MS, REQUEST_DEFAULT_CONNECTION_REQUEST_TIMEOUT_MS);
                 socketTimeout = parseIntParameter(PARAM_REQUEST_DEFAULT_SOCKET_TIMEOUT_MS, REQUEST_DEFAULT_SOCKET_TIMEOUT_MS);
                 maxTotalConnections = parseIntParameter(PARAM_DEFAULT_MAX_TOTAL_CONNECTIONS, DEFAULT_HTTP_MAX_TOTAL_CONNECTIONS);
+                maxConnectionsPerRoute = parseIntParameter(PARAM_DEFAULT_HTTP_CONNECTIONS_PER_ROUTE, DEFAULT_HTTP_CONNECTIONS_PER_ROUTE);
             }
         }
 
@@ -203,6 +209,10 @@ public class UserInfoResolver {
 
         int getMaxTotalConnections() {
             return maxTotalConnections;
+        }
+
+        int getMaxConnectionsPerRoute() {
+            return maxConnectionsPerRoute;
         }
     }
 }
