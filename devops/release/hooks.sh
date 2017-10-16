@@ -7,7 +7,7 @@ SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # Parameter $1 - version as text
 # Returns tag as text
 function format_release_tag {
-  echo "oauth-$1"
+  echo "oauth-parent-$1"
 }
 
 # Hook method to format your next snapshot version
