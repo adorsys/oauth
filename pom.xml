@@ -21,7 +21,7 @@
 
   <groupId>de.adorsys.oauth</groupId>
   <artifactId>oauth-parent</artifactId>
-  <version>0.33-SNAPSHOT</version>
+  <version>0.33</version>
   <packaging>pom</packaging>
   <name>OAuth JEE Component</name>
   <description>oauth components for ee-server (currently only JBoss)</description>
