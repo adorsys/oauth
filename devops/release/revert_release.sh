@@ -1,11 +1,7 @@
 #!/bin/bash
 set -e
-if [ -f "./.common-util.sh" ]; then
-	source ./.common-util.sh
-else
-	echo 'Missing file .common-util.sh. Aborting'
-	exit -1
-fi
+
+SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if [[ $# -ne 1 && $# -ne 2 ]]
 then
@@ -16,9 +12,18 @@ fi
 
 RELEASE_VERSION=$1
 
+source $SCRIPT_PATH/hooks.sh
+
+DEVELOP_BRANCH=`get_develop_branch_name`
+MASTER_BRANCH=`get_master_branch_name`
 RELEASE_BRANCH=`format_release_branch_name "$RELEASE_VERSION"`
 
-check_local_workspace_state "revert_release"
+if ! git diff-index --quiet HEAD --
+then
+  echo "This script is only safe when your have a clean workspace."
+  echo "Please clean your workspace by stashing or commiting and pushing changes before processing this revert-release script."
+  exit 1
+fi
 
 if [ $# -eq 1 ]
 then
@@ -64,4 +69,3 @@ if [[ ! $(git rev-parse --abbrev-ref HEAD) = "$CURRENT_BRANCH" ]]
 then
   git checkout "$CURRENT_BRANCH"
 fi
-

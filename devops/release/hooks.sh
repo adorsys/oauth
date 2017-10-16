@@ -1,13 +1,7 @@
 #!/bin/bash
-# ********************** INFO *********************
-# This file is used to override default settings.
-# Therefore only the functions that deviate from
-# provided defaults may be left here.
-# You can use it also in parent directory with the
-# name .release-scripts-hook.sh
-# *************************************************
 set -e
 
+SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Hook method to format your release tag
 # Parameter $1 - version as text
@@ -64,6 +58,6 @@ function build_release_modules {
 # Should set version numbers in your modules
 # Parameter $1 - version as text
 function set_modules_version {
-	echo "Version: $1 - calling maven versions plugin"
-	cd $SCRIPT_PATH/../.. && mvn -B versions:set -DnewVersion="$1"
+  echo "Version: $1 - calling maven versions plugin"
+  cd $SCRIPT_PATH/../.. && mvn -B versions:set -DnewVersion="$1"
 }
