@@ -5,14 +5,14 @@
   <servers>
     <server>
       <!-- Maven Central Deployment -->
-      <id>ossrh</id>
+      <id>sonatype</id>
       <username>${env.SONATYPE_USERNAME}</username>
       <password>${env.SONATYPE_PASSWORD}</password>
     </server>
   </servers>
   <profiles>
     <profile>
-      <id>ossrh</id>
+      <id>sonatype</id>
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
