@@ -59,5 +59,5 @@ function build_release_modules {
 # Parameter $1 - version as text
 function set_modules_version {
   echo "Version: $1 - calling maven versions plugin"
-  cd $SCRIPT_PATH/../.. && mvn -B versions:set -DnewVersion="$1"
+  cd $SCRIPT_PATH/../.. && mvn -B versions:set -DnewVersion="$1" -DgenerateBackupPoms=false
 }
