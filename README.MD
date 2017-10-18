@@ -19,9 +19,17 @@ $ mvn clean install -P jbossas-embedded
 ```
 
 # Release
+- Check Javadocs errors:
+```
+$ mvn javadoc:javadoc
+```
 
+- Make Release in git:
+> ./devops/release/release.sh <release version> <next version (without -SNAPSHOT)>
+
+For example:
 ```
-$ mvn release:prepare -Pwildfly
-$ mvn release:perform -Darguments=-Pwildfly
+$ ./devops/release/release.sh 1.0 1.1
 ```
+
 Afterwards, log in to [Sonatype nexus](https://oss.sonatype.org/) and click on "Close" and then "Release" for the staging repository ([as described here](http://central.sonatype.org/pages/releasing-the-deployment.html)).

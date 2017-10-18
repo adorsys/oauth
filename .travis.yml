@@ -8,6 +8,7 @@ install:
 
 script:
   - mvn --settings .travis/settings.xml package -B -V -P wildfly
+  - mvn --settings .travis/settings.xml javadoc:javadoc -B -V -P wildfly
 
 before_deploy:
   - echo $GPG_SECRET_KEY | base64 --decode | $GPG_EXECUTABLE --import
