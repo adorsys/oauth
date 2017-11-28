@@ -103,8 +103,8 @@ public class UserInfoResolver {
             httpGet.setHeader("Authorization", new BearerAccessToken(accessToken.getValue()).toAuthorizationHeader());
 
             HttpCacheContext context = HttpCacheContext.create();
-            try {
-                CloseableHttpResponse userInfoResponse = cachingHttpClient.execute(httpGet, context);
+            try (CloseableHttpResponse userInfoResponse = cachingHttpClient.execute(httpGet, context)){
+
 
                 //TODO mask accessToken
                 LOG.debug("read userinfo {} {}", OAuthCredentialHasher.hashCredential(accessToken.getValue()), context.getCacheResponseStatus());
