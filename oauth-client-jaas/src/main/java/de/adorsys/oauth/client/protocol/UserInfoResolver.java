@@ -120,6 +120,7 @@ public class UserInfoResolver {
                 return UserInfo.parse(baos.toString());
             } catch (Exception e) {
                 // Auch bei einem Timeout die Exception weiterwerfen
+                LOG.warn("Exception beim accessing {}: ", userInfoEndpoint.toASCIIString(), e);
                 throw new IllegalStateException(e);
             }
         } catch (Exception e) {
