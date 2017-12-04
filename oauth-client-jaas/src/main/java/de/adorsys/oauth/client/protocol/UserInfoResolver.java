@@ -104,6 +104,8 @@ public class UserInfoResolver {
 
             HttpCacheContext context = HttpCacheContext.create();
             try (CloseableHttpResponse userInfoResponse = cachingHttpClient.execute(httpGet, context)){
+
+
                 //TODO mask accessToken
                 LOG.debug("read userinfo {} {}", OAuthCredentialHasher.hashCredential(accessToken.getValue()), context.getCacheResponseStatus());
                 HttpEntity entity = userInfoResponse.getEntity();
@@ -116,6 +118,10 @@ public class UserInfoResolver {
                 entity.writeTo(baos);
     
                 return UserInfo.parse(baos.toString());
+            } catch (Exception e) {
+                // Auch bei einem Timeout die Exception weiterwerfen
+                LOG.warn("Exception beim accessing {}: ", userInfoEndpoint.toASCIIString(), e);
+                throw new IllegalStateException(e);
             }
         } catch (Exception e) {
             throw new IllegalStateException(e);
